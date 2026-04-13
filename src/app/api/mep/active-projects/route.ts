@@ -67,19 +67,33 @@ export async function GET() {
       const order = orderTeam.order
       const latestProgress = order.progressUpdates[0]
       const progress = latestProgress?.percentage || 0
-      
+
       return {
-        ...orderTeam,
-        order: {
-          ...order,
-          progress
-        }
+        id: order.id,
+        orderNumber: order.orderNumber,
+        clientName: order.clientName,
+        clientEmail: order.client?.user?.email,
+        projectName: order.projectName,
+        description: order.description,
+        landArea: order.landArea,
+        buildingArea: order.buildingArea,
+        buildingModel: order.buildingModel,
+        buildingFloors: order.buildingFloors,
+        buildingCategory: order.buildingCategory,
+        qualityLevel: order.qualityLevel,
+        rab: order.rab,
+        designFee: order.designFee,
+        status: order.status,
+        progressPercentage: progress,
+        createdAt: order.createdAt,
+        assignedAt: order.assignedAt || orderTeam.acceptedAt,
+        assignedProfessions: order.teamMembers?.map((tm: any) => tm.profession) || []
       }
     })
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       activeProjects: projectsWithProgress,
-      hasActiveProjects: projectsWithProgress.length > 0 
+      hasActiveProjects: projectsWithProgress.length > 0
     })
   } catch (error) {
     console.error('Error fetching active projects:', error)
