@@ -235,14 +235,13 @@ export default function HRDDashboard() {
 
   const handleLogout = async () => {
     try {
-      await signOut({ 
-        callbackUrl: "/admin/login",
-        redirect: true
-      })
+      await router.push('/admin/login')
+      // Clear session after redirect starts
+      await signOut({ redirect: false })
     } catch (error) {
       console.error('Logout error:', error)
       // Force redirect even if signOut fails
-      router.push('/admin/login')
+      window.location.href = '/admin/login'
     }
   }
 
