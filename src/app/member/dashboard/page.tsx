@@ -52,6 +52,7 @@ import {
   Calculator
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import { AdColumn } from "@/components/ads/AdColumn"
 
 interface ActiveProject {
   id: string
@@ -496,7 +497,8 @@ export default function ArchitectDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 ml-72 p-8">
+      <div className="flex flex-1 ml-72">
+        <main className="flex-1 p-8">
         {/* Dashboard View */}
         {activeNav === 'dashboard' && (
           <div className="space-y-8">
@@ -992,6 +994,8 @@ export default function ArchitectDashboard() {
           </div>
         )}
       </main>
+      <AdColumn />
+      </div>
 
       {/* Profession Selection Dialog */}
       <Dialog open={professionSelectionDialogOpen} onOpenChange={setProfessionSelectionDialogOpen}>

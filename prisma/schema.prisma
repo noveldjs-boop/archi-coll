@@ -1025,3 +1025,22 @@ model CompanyNews {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+// ==============================
+// MATERIAL ADS - KOLAM IKLAN MATERIAL KONSTRUKSI
+// ==============================
+
+// MaterialAd - Iklan produk material konstruksi untuk kolom iklan member dashboard
+model MaterialAd {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  category        String   // 'struktural', 'penutup-dinding', 'atap-plafon', 'finishing', 'transparan-kaca', 'alternatif-alami', 'mep', 'sanitary', 'landscape'
+  imageUrl        String?
+  catalogUrl      String?
+  price           String?
+  contact         String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

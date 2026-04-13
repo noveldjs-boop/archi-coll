@@ -53,6 +53,7 @@ import {
   Calendar
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import { MaterialAdsManagement } from "@/components/admin/MaterialAdsManagement"
 
 interface MarketingStats {
   totalPartners: number
@@ -932,6 +933,9 @@ export default function MarketingDashboard() {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* Material Ads Management */}
+        <MaterialAdsManagement />
       </main>
     </div>
   )

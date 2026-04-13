@@ -41,6 +41,7 @@ import {
   Award
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import { AdColumn } from "@/components/ads/AdColumn"
 
 interface ActiveProject {
   id: string
@@ -452,7 +453,8 @@ export default function LicensedArchitectDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 ml-64 p-6">
+      <div className="flex flex-1 ml-64">
+        <main className="flex-1 p-6">
         {/* Dashboard View */}
         {activeNav === 'dashboard' && (
           <div className="space-y-6">
@@ -824,8 +826,6 @@ export default function LicensedArchitectDashboard() {
             </Card>
           </div>
         )}
-      </main>
-
       {/* Project Detail Dialog */}
       <Dialog open={projectDetailDialogOpen} onOpenChange={setProjectDetailDialogOpen}>
         <DialogContent className="bg-[#1E1E1E] border-gray-800 text-white max-w-2xl">
@@ -914,6 +914,9 @@ export default function LicensedArchitectDashboard() {
           )}
         </DialogContent>
       </Dialog>
+        </main>
+        <AdColumn />
+      </div>
     </div>
   )
 }

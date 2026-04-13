@@ -35,6 +35,7 @@ import {
   RefreshCw,
 } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { AdColumn } from "@/components/ads/AdColumn"
 
 interface Order {
   id: string
@@ -536,7 +537,8 @@ export default function ClientDashboard() {
         </aside>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Header */}
           <header className="flex-shrink-0 bg-[#1E1E1E]/80 backdrop-blur-lg border-b border-gray-800 px-6 py-4">
             <div className="flex items-center justify-between">
@@ -1066,6 +1068,7 @@ export default function ClientDashboard() {
             )}
           </div>
         </div>
+        <AdColumn />
       </div>
 
       {/* Order Detail Dialog */}
@@ -1321,5 +1324,6 @@ export default function ClientDashboard() {
         </DialogContent>
       </Dialog>
     </div>
+  </div>
   )
 }
