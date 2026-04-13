@@ -234,7 +234,16 @@ export default function HRDDashboard() {
   }
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: "/admin/login" })
+    try {
+      await signOut({ 
+        callbackUrl: "/admin/login",
+        redirect: true
+      })
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Force redirect even if signOut fails
+      router.push('/admin/login')
+    }
   }
 
   const professions = [
