@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 // GET - Get team members for a specific project
 export async function GET(
@@ -8,7 +9,7 @@ export async function GET(
   { params }: { params: { orderId: string } }
 ) {
   try {
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
