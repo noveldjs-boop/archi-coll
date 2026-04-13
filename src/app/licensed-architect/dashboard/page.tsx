@@ -238,7 +238,15 @@ export default function LicensedArchitectDashboard() {
   }
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: "/" })
+    try {
+      await router.push('/join-member')
+      // Clear session after redirect starts
+      await signOut({ redirect: false })
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Force redirect even if signOut fails
+      window.location.href = '/join-member'
+    }
   }
 
   const getCategoryIcon = (category: string) => {
