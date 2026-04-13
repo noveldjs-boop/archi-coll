@@ -58,7 +58,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { title, description, category, imageUrl, catalogUrl, price, contact, isActive } = body
+    const { title, description, category, imageUrl, catalogUrl, price, contact, isActive, companyName, companyLogo, websiteUrl } = body
 
     // Validate category if provided
     if (category) {
@@ -81,7 +81,10 @@ export async function PUT(
         ...(catalogUrl !== undefined && { catalogUrl }),
         ...(price !== undefined && { price }),
         ...(contact !== undefined && { contact }),
-        ...(isActive !== undefined && { isActive })
+        ...(isActive !== undefined && { isActive }),
+        ...(companyName !== undefined && { companyName }),
+        ...(companyLogo !== undefined && { companyLogo }),
+        ...(websiteUrl !== undefined && { websiteUrl })
       }
     })
 

@@ -1041,6 +1041,55 @@ model MaterialAd {
   price           String?
   contact         String?
   isActive        Boolean  @default(true)
+
+  // Company/Partner Information
+  companyName     String?
+  companyLogo     String?  // URL to company logo
+  websiteUrl      String?  // Company website URL
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  productItems    ProductItem[]
+}
+
+// ProductItem - Item produk yang diupload via Excel
+model ProductItem {
+  id              String   @id @default(cuid())
+  materialAdId    String
+  materialAd      MaterialAd @relation(fields: [materialAdId], references: [id], onDelete: Cascade)
+
+  // Product information from Excel
+  itemName        String   // Nama produk
+  itemCode        String?  // Kode/SKU produk
+  description     String?  // Deskripsi produk
+  unit            String?  // Satuan (m³, m, pcs, kg, dll)
+  price           Float?   // Harga per unit
+  stock           Int?     // Jumlah stok
+  specifications  String?  // Spesifikasi teknis (JSON string)
+  imageUrl        String?  // Gambar produk
+
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Approval Material references
+  approvalItems   MaterialApprovalItem[]
+}
+
+// MaterialApprovalItem - Item yang dipilih untuk Approval Material pada project
+model MaterialApprovalItem {
+  id              String   @id @default(cuid())
+  productItemId   String
+  productItem     ProductItem @relation(fields: [productItemId], references: [id], onDelete: Cascade)
+
+  // Project information
+  orderId         String?  // ID order yang terkait
+  userId          String?  // User yang memilih item ini
+  quantity        Float?   // Jumlah yang dipesan
+  notes           String?  // Catatan tambahan
+
+  status          String   @default("pending") // "pending", "approved", "rejected"
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

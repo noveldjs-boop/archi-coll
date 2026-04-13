@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation"
-import { AdCard } from "@/components/ads/AdCard"
+import { MaterialAdCard } from "@/components/ads/MaterialAdCard"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Package, AlertCircle } from "lucide-react"
@@ -129,15 +129,19 @@ async function AdsGrid({ categorySlug }: { categorySlug: string }) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {data.ads.map((ad: any) => (
-          <AdCard
+          <MaterialAdCard
             key={ad.id}
             id={ad.id}
             title={ad.title}
             description={ad.description}
+            category={ad.category}
             imageUrl={ad.imageUrl}
             catalogUrl={ad.catalogUrl}
             price={ad.price}
             contact={ad.contact}
+            companyName={ad.companyName}
+            companyLogo={ad.companyLogo}
+            websiteUrl={ad.websiteUrl}
           />
         ))}
       </div>
