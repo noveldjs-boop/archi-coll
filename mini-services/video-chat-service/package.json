@@ -1,0 +1,17 @@
+{
+  "name": "video-chat-service",
+  "version": "1.0.0",
+  "description": "WebSocket service for video chat and real-time messaging",
+  "main": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "start": "bun index.ts"
+  },
+  "dependencies": {
+    "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}

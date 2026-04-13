@@ -1,0 +1,1027 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String? // Hashed password for login
+  role      String   @default("user") // "admin", "user", "member", "client"
+  googleEmail String? // Google email for Drive integration
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  member    Member?
+  client    Client?
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Membership System Models
+model Member {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profession           String // "architect", "structure", "mep", "drafter", "qs", "licensed_architect"
+  phone                String
+  address              String?
+  bio                  String? // Enhanced profile field
+  location             String? // Enhanced profile field
+  profileImage         String? // Profile photo URL
+  experience           Int? // years of experience
+  portfolioUrl         String?
+  expertise            String? // Comma-separated: "residential,hospital,villa,cafe_resto,apartment,commercial"
+  buildingTypes        String? // For licensed architects: "low-rise,mid-rise,high-rise"
+  portfolioImages      String? // JSON array of image URLs
+  portfolioDescription String? // Text description of portfolio
+  linkedinUrl          String?
+  portfolioWebsite     String?
+  assistantProjects    String? // JSON object tracking assistant projects per expertise
+  status               String    @default("pending") // "pending", "active", "suspended", "rejected"
+  approvedAt           DateTime?
+  approvedBy           String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  certificates      Certificate[]
+  assignments       ProjectAssignment[]
+  ledProjects       ConstructionProject[] @relation("ProjectLeader")
+  teamMemberships   ProjectTeam[]
+  schedules         ProjectSchedule[]
+  sentMessages      Message[]             @relation("SentMessages")
+  receivedMessages  Message[]             @relation("ReceivedMessages")
+  inbox             Inbox[]
+  workUploads       ProjectWork[]
+  ratingsGiven      ExpertiseRating[]     @relation("RatingsGiven")
+  ratingsReceived   ExpertiseRating[]     @relation("RatingsReceived")
+  profileProjects   MemberProject[]
+  applications      ProjectApplication[]
+  scheduledMeetings VideoMeeting[]
+  assignedOrders    Order[]               @relation("AssignedOrders")
+  orderMessages     ClientMessage[]       @relation("OrderMessages")
+  orderTeamMembers  OrderTeam[]
+}
+
+model Certificate {
+  id                String    @id @default(cuid())
+  memberId          String
+  member            Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  certificateType   String // "STRA", "SKA", "SKT", "Sertifikasi Struktur", "Sertifikasi MEP", etc.
+  certificateNumber String?
+  issuer            String?
+  issuedDate        DateTime?
+  expiryDate        DateTime?
+  documentUrl       String? // URL to uploaded certificate
+  verified          Boolean   @default(false)
+  verifiedAt        DateTime?
+  verifiedBy        String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model ConstructionProject {
+  id                   String   @id @default(cuid())
+  titleIndo            String
+  titleEng             String
+  descriptionIndo      String?
+  descriptionEng       String?
+  imageUrl             String?
+  category             String // e.g., "residential", "commercial", "interior"
+  requiredProfession   String // Which profession can take this project
+  requiredExpertise    String? // Required expertise: "residential,hospital,villa"
+  requiredBuildingType String? // Required building type: "low-rise,mid-rise,high-rise"
+  deadline             DateTime
+  budget               Float?
+  location             String?
+  clientName           String?
+  clientEmail          String?
+  clientPhone          String?
+  leaderId             String? // Design Architect who leads this project
+  leader               Member?  @relation("ProjectLeader", fields: [leaderId], references: [id])
+  status               String   @default("open") // "open", "leader_assigned", "team_assigned", "in_progress", "review", "completed", "cancelled"
+  priority             String   @default("medium") // "low", "medium", "high", "urgent"
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  assignments      ProjectAssignment[]
+  revisions        ProjectRevision[]
+  chatMessages     ProjectChat[]
+  teamMembers      ProjectTeam[]
+  schedules        ProjectSchedule[]
+  workUploads      ProjectWork[]
+  expertiseRatings ExpertiseRating[]
+  applications     ProjectApplication[]
+  meetings         VideoMeeting[]
+}
+
+model ProjectAssignment {
+  id            String              @id @default(cuid())
+  projectId     String
+  project       ConstructionProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  memberId      String
+  member        Member              @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  status        String              @default("pending") // "pending", "accepted", "in_progress", "completed", "rejected", "expired"
+  role          String              @default("architect") // "architect" or "assistant"
+  expertiseArea String? // The expertise area this assignment applies to
+  assignedAt    DateTime            @default(now())
+  acceptedAt    DateTime?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  expiryDate    DateTime
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@unique([projectId, memberId])
+}
+
+model ProjectRevision {
+  id             String              @id @default(cuid())
+  projectId      String
+  project        ConstructionProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  revisionNumber Int
+  title          String
+  description    String?
+  uploadedBy     String // memberId
+  documentUrl    String
+  createdAt      DateTime            @default(now())
+
+  @@unique([projectId, revisionNumber])
+}
+
+model ProjectChat {
+  id            String              @id @default(cuid())
+  projectId     String
+  project       ConstructionProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  memberId      String
+  message       String
+  attachmentUrl String?
+  createdAt     DateTime            @default(now())
+}
+
+// Project Team - Members assigned to work on a project
+model ProjectTeam {
+  id         String              @id @default(cuid())
+  projectId  String
+  project    ConstructionProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  memberId   String
+  member     Member              @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  profession String // "structure", "mep", "drafter", "qs", "licensed_architect"
+  role       String              @default("team_member") // "team_member", "assistant"
+  assignedBy String? // memberId of Design Architect who assigned
+  assignedAt DateTime            @default(now())
+  status     String              @default("active") // "active", "completed", "removed"
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@unique([projectId, memberId])
+}
+
+// Project Schedule - Timeline for project team members
+model ProjectSchedule {
+  id        String              @id @default(cuid())
+  projectId String
+  project   ConstructionProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  memberId  String?
+  member    Member?             @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  task      String // Description of task/milestone
+  startDate DateTime
+  endDate   DateTime
+  status    String              @default("pending") // "pending", "in_progress", "completed", "delayed"
+  priority  String              @default("medium") // "low", "medium", "high", "urgent"
+  notes     String?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+}
+
+// Project Work - Team members upload work to architect
+model ProjectWork {
+  id          String              @id @default(cuid())
+  projectId   String
+  project     ConstructionProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy  String // memberId
+  uploader    Member              @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  fileUrl     String
+  fileUrls    String? // JSON array of multiple file URLs
+  status      String              @default("pending") // "pending", "reviewed", "approved", "revision_required"
+  reviewedBy  String? // memberId of architect who reviewed
+  reviewedAt  DateTime?
+  feedback    String? // Architect's feedback
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+// Expertise Rating - Architect rates assistant work
+model ExpertiseRating {
+  id            String              @id @default(cuid())
+  projectId     String
+  project       ConstructionProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  ratedBy       String // memberId of architect
+  rater         Member              @relation("RatingsGiven", fields: [ratedBy], references: [id], onDelete: Cascade)
+  ratedMemberId String // memberId of assistant
+  ratedMember   Member              @relation("RatingsReceived", fields: [ratedMemberId], references: [id], onDelete: Cascade)
+  expertiseArea String // "residential", "villa", etc.
+  rating        Int // 1-5 stars
+  feedback      String?
+  createdAt     DateTime            @default(now())
+}
+
+// Member Profile Projects - Projects uploaded to member profile
+model MemberProject {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  category    String // "residential", "villa", "cafe_restaurant", etc.
+  imageUrls   String // JSON array of image URLs
+  location    String?
+  year        Int?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Project Application - Members apply to join projects
+model ProjectApplication {
+  id            String              @id @default(cuid())
+  projectId     String
+  project       ConstructionProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  applicantId   String
+  applicant     Member              @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  expertiseArea String? // The expertise area applying for
+  message       String?
+  status        String              @default("pending") // "pending", "accepted", "rejected"
+  reviewedAt    DateTime?
+  reviewedBy    String?
+  feedback      String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@unique([projectId, applicantId])
+}
+
+// Video Meeting - Custom meeting per project
+model VideoMeeting {
+  id           String              @id @default(cuid())
+  projectId    String
+  project      ConstructionProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  scheduledBy  String // memberId
+  scheduler    Member              @relation(fields: [scheduledBy], references: [id], onDelete: Cascade)
+  scheduledAt  DateTime
+  duration     Int // Duration in minutes
+  status       String              @default("scheduled") // "scheduled", "ongoing", "completed", "cancelled"
+  meetingUrl   String? // URL for video meeting
+  participants String? // JSON array of member IDs who joined
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+model Message {
+  id         String    @id @default(cuid())
+  senderId   String
+  sender     Member    @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   Member    @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  subject    String?
+  content    String
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+model Inbox {
+  id        String   @id @default(cuid())
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  type      String // "project", "system", "message"
+  title     String
+  content   String
+  link      String? // URL to relevant page
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// Admin Content Management Models
+model Service {
+  id        String           @id @default(cuid())
+  code      String           @default("") // Service code (e.g., "A", "B", "C" for pricing calculation)
+  titleId   String // Translation key for title (e.g., "services.residential.title")
+  titleIndo String
+  titleEng  String
+  descId    String // Translation key for description
+  descIndo  String
+  descEng   String
+  icon      String? // Icon name (e.g., "Home", "Building", etc.) - optional
+  imageUrl  String? // Custom image URL for service logo
+  order     Int              @default(0)
+  active    Boolean          @default(true)
+  features  ServiceFeature[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model ServiceFeature {
+  id        String   @id @default(cuid())
+  serviceId String
+  featureId String // Translation key for feature
+  textIndo  String
+  textEng   String
+  order     Int      @default(0)
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Portfolio/Showcase Projects (Display on website)
+model PortfolioProject {
+  id              String   @id @default(cuid())
+  titleIndo       String
+  titleEng        String
+  descriptionIndo String?
+  descriptionEng  String?
+  imageUrl        String?
+  category        String // e.g., "residential", "commercial", "interior"
+  order           Int      @default(0)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// About Page Content
+model AboutContent {
+  id          String   @id @default(cuid())
+  section     String   @unique // "vision", "mission", "values"
+  contentIndo String
+  contentEng  String
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Team Members
+model TeamMember {
+  id              String   @id @default(cuid())
+  name            String
+  titleIndo       String
+  titleEng        String
+  descriptionIndo String?
+  descriptionEng  String?
+  imageUrl        String?
+  linkedinUrl     String?
+  email           String?
+  role            String   @default("member") // "founder", "co-founder", "member"
+  order           Int      @default(0)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Join Member Form Requirements
+model FormRequirement {
+  id              String   @id @default(cuid())
+  fieldId         String   // "name", "email", "phone", etc.
+  profession      String? // "architect", "licensed_architect", "structure", "mep", "drafter", "qs", or null for all
+  labelIndo       String
+  labelEng        String
+  fieldType       String // "text", "email", "tel", "select", "textarea", "file"
+  required        Boolean  @default(true)
+  options         String? // JSON string for select options
+  placeholderIndo String?
+  placeholderEng  String?
+  order           Int      @default(0)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([fieldId, profession])
+}
+
+// Contact Information
+model ContactInfo {
+  id        String   @id @default(cuid())
+  type      String   @unique // "address", "phone", "email", "whatsapp"
+  labelIndo String
+  labelEng  String
+  valueIndo String
+  valueEng  String
+  icon      String // Lucide icon name
+  order     Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Operating Hours
+model OperatingHours {
+  id        String   @id @default(cuid())
+  day       String   @unique // "monday", "tuesday", etc.
+  labelIndo String
+  labelEng  String
+  openTime  String // Format: "09:00"
+  closeTime String // Format: "17:00"
+  closed    Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Contact Form Fields
+model ContactFormField {
+  id              String   @id @default(cuid())
+  fieldId         String   @unique // "name", "email", "phone", "subject", "message", etc.
+  labelIndo       String
+  labelEng        String
+  fieldType       String // "text", "email", "tel", "textarea", "select"
+  required        Boolean  @default(true)
+  placeholderIndo String?
+  placeholderEng  String?
+  order           Int      @default(0)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Home Page Statistics
+model HomeStats {
+  id         String   @id @default(cuid())
+  key        String   @unique // "projects", "members", "experience", "clients", etc.
+  labelIndo  String
+  labelEng   String
+  value      String // Used for static values (e.g., "15+ Tahun")
+  dataSource String   @default("static") // "static" or "dynamic" - if dynamic, value is calculated from DB
+  icon       String // Lucide icon name (e.g., "Building2", "Users", "Award", etc.)
+  order      Int      @default(0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Client model
+model Client {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  phone       String
+  address     String?
+  profession  String?
+  companyName String?
+  status      String   @default("active") // "active", "suspended", "banned"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders      Order[]
+  sentMessages    ClientMessage[]   @relation("ClientSentMessages")
+}
+
+// Order model with payment tracking
+model Order {
+  id          String @id @default(cuid())
+  orderNumber String @unique
+
+  // Client information
+  clientId          String
+  clientName        String
+  clientPhone       String
+  clientAddress     String
+  clientProfession  String
+  clientCompanyName String?
+
+  // Building information
+  landArea         String
+  landPosition     String
+  landBoundary     String?
+  accessRoadWidth  String?
+  buildingArea     String
+  buildingModel    String
+  buildingFloors   String
+  structureType    String
+  buildingCategory String // IAI category: "k1-low-sederhana", "k2-low-menengah", etc.
+  buildingType     String? // "low-rise", "mid-rise", "high-rise" (auto-calculated based on floors)
+  qualityLevel     String? // "sederhana", "menengah", "mewah" (maps to IAI k1/k2/k3 categories)
+
+  // KDB, KLB, KDH, RTH information
+  kdb Float? // Koefisien Dasar Bangunan
+  klb Float? // Koefisien Lantai Bangunan
+  kdh Float? // Koefisien Dasar Hijau
+  rth Float? // Ruang Terbuka Hijau
+
+  // Klasifikasi tambahan
+  teknicalClass String? // Kelas teknis yang dipilih
+  densityClass  String? // Kepadatan massa (otomatis dari jumlah lantai)
+  locationAddress String? // Alamat lengkap dari Google Maps
+  latitude      Float?
+  longitude     Float?
+
+  // Project details
+  projectName      String?  // Nama proyek dari klien
+  description      String?
+  coordinates      String?
+
+  // Price and payment calculation (IAI standard)
+  rab        Float // RAB (Rencana Anggaran Biaya)
+  designFee  Float // Total Design Fee (calculated using IAI rates)
+  iaiFeeRate Float // IAI fee rate used
+  pricePerM2 Float // Building price per m²
+
+  // Payment terms (simulation)
+  simulatedDP10    Float // 10% DP from simulated design fee
+  dpPaidAmount     Float // Amount of DP actually paid
+  agreedDesignFee  Float? // Actual design fee agreed after pre-design (can differ from simulation)
+  remainingAfterDP Float // Design fee minus DP (using agreedDesignFee or simulated if not agreed)
+
+  // Payment schedule
+  dpPaid              Boolean   @default(false)
+  dpPaymentDate       DateTime?
+  agreedDesignFeeDate DateTime? // When final design fee was agreed
+
+  // Payment stages
+  designAgreed         Boolean   @default(false)
+  paymentStage         String    @default("pending") // "pending", "dp_paid", "design_agreed", "payment_80_percent", "payment_20_percent", "completed"
+  payment80PercentPaid Boolean   @default(false)
+  payment80Date        DateTime?
+  payment20PercentPaid Boolean   @default(false)
+  payment20Date        DateTime?
+  fullyPaid            Boolean   @default(false)
+
+  // Final calculated values (after design agreed)
+  finalDesignFee Float? // Final agreed design fee
+  finalPayment80 Float? // 80% of remaining after agreed fee
+  finalPayment20 Float? // 20% after construction completion
+
+  // Client rating
+  clientRating    Int?     // 1-5 stars rating from client
+  ratingFeedback  String?  // Additional feedback from client
+  ratedAt         DateTime?
+
+  // Google Drive integration
+  googleDriveFolderId String? // ID folder di Google Drive untuk project ini
+  googleDriveLink     String? // Link ke Google Drive folder
+
+  // Status
+  status           String    @default("pending") // "pending", "in_pre_design", "in_schematic", "in_ded", "in_review", "cancelled", "completed"
+  assignedMemberId String?
+  assignedAt       DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt()
+
+  // Relations
+  assignedMember  Member?          @relation("AssignedOrders", fields: [assignedMemberId], references: [id])
+  client          Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  payments        Payment[]
+  designDocuments DesignDocument[]
+  chatMessages    ClientMessage[]
+  progressUpdates  ProjectProgress[]
+  videoSessions    VideoSession[]
+  teamMembers     OrderTeam[]
+}
+
+// Order Team - Professions assigned to work on an order
+model OrderTeam {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  memberId   String?
+  member     Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  profession String   // "structure", "mep", "drafter", "qs", "licensed_architect"
+  role       String   @default("team_member") // "team_member", "assistant"
+  status     String   @default("invited") // "invited", "accepted", "rejected", "completed"
+  invitedAt  DateTime @default(now())
+  acceptedAt DateTime?
+  assignedBy String?  // architect memberId
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([orderId, profession])
+}
+
+// Payment records
+model Payment {
+  id            String    @id @default(cuid())
+  orderId       String
+  type          String // "dp", "payment_80_percent", "payment_20_percent"
+  amount        Float
+  paidAt        DateTime?
+  paymentMethod String? // "transfer", "cash", "bank_transfer", etc.
+  proofUrl      String? // URL to payment proof
+  verified      Boolean   @default(false)
+  verifiedAt    DateTime?
+  verifiedBy    String? // admin userId who verified
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt()
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+// Design documents delivered to client
+model DesignDocument {
+  id           String    @id @default(cuid())
+  orderId      String
+  documentType String // "pre_design", "schematic", "ded", "as_build"
+  title        String
+  description  String?
+  fileUrl      String
+  deliveredAt  DateTime?
+  version      Int       @default(1)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt()
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+// Order Form Fields
+model OrderFormField {
+  id              String   @id @default(cuid())
+  fieldId         String   @unique
+  labelIndo       String
+  labelEng        String
+  fieldType       String // "text", "email", "tel", "select", "textarea", "number"
+  required        Boolean  @default(true)
+  options         String? // JSON string for select options
+  placeholderIndo String?
+  placeholderEng  String?
+  order           Int      @default(0)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Building Category
+model BuildingCategory {
+  id              String                      @id @default(cuid())
+  categoryId      String                      @unique
+  labelIndo       String
+  labelEng        String
+  descriptionIndo String?
+  descriptionEng  String?
+  featuresIndo    String? // JSON string of features
+  featuresEng     String?
+  icon            String?
+  imageUrl        String?
+  active          Boolean                     @default(true)
+  order           Int                         @default(0)
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+  formFields      BuildingCategoryFormField[]
+}
+
+// Building Category Form Fields
+model BuildingCategoryFormField {
+  id              String           @id @default(cuid())
+  categoryId      String
+  fieldId         String           @unique
+  labelIndo       String
+  labelEng        String
+  fieldType       String // "text", "email", "tel", "select", "textarea", "number"
+  required        Boolean          @default(true)
+  options         String? // JSON string for select options
+  placeholderIndo String?
+  placeholderEng  String?
+  order           Int              @default(0)
+  active          Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  category        BuildingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
+
+// Pricing Rules - Harga per m² berdasarkan kategori dan kualitas
+model PricingRule {
+  id              String   @id @default(cuid())
+  buildingType    String   // "low-rise", "mid-rise", "high-rise"
+  qualityLevel    String   // "sederhana" (K1), "menengah" (K2), "mewah" (K3)
+  pricePerM2      Float    // Harga konstruksi per m²
+  iaiFeeRate      Float    // Persentase fee desain sesuai standar IAI
+  minFloors       Int      @default(0)
+  maxFloors       Int?     // null untuk high-rise tanpa batas
+  active          Boolean  @default(true)
+  descriptionIndo String?
+  descriptionEng  String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Client Message - Chat between client and architect for orders
+model ClientMessage {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  senderId    String
+  senderType  String   // "client" or "architect"
+  message     String
+  attachmentUrl String?
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // For client sender
+  clientId    String?
+  client      Client?  @relation("ClientSentMessages", fields: [clientId], references: [id], onDelete: SetNull)
+
+  // For architect sender
+  memberId    String?
+  member      Member?  @relation("OrderMessages", fields: [memberId], references: [id], onDelete: SetNull)
+}
+
+// Project Progress - Track progress of order
+model ProjectProgress {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  stage       String   // "inquiry", "pre_design", "schematic", "ded", "construction", "completion"
+  title       String   // Title of progress update
+  description String?  // Detailed description
+  percentage  Int      // Progress percentage (0-100)
+  status      String   @default("in_progress") // "pending", "in_progress", "completed"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Video Session - Video conversation like Zoom
+model VideoSession {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  scheduledAt DateTime
+  duration    Int      // Duration in minutes
+  status      String   @default("scheduled") // "scheduled", "ongoing", "completed", "cancelled"
+  meetingUrl  String?  // URL for video meeting (Zoom, etc.)
+  roomId      String?  // Room ID for WebSocket connection
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Service Configuration - Pengaturan layanan untuk formulir pemesanan
+model ServiceConfig {
+  id              String   @id @default(cuid())
+  serviceKey      String   @unique // "architectural", "landscape", "interior", etc.
+  labelIndo       String
+  labelEng        String
+  icon            String?  // Lucide icon name
+  descriptionIndo String?
+  descriptionEng  String?
+  rate            Float    // Persentase dari RAB (0.10 = 10%)
+  minFee          Float    // Minimum fee dalam Rupiah
+  order           Int      @default(0)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Order Service Form Field - Field khusus untuk service selection di order form
+model OrderServiceField {
+  id              String   @id @default(cuid())
+  fieldKey        String   @unique // "location", "landArea", "buildingArea", etc.
+  labelIndo       String
+  labelEng        String
+  fieldType       String // "text", "number", "select", "textarea", "email", "tel"
+  required        Boolean  @default(true)
+  placeholderIndo String?
+  placeholderEng  String?
+  options         String? // JSON string untuk select options
+  validation      String? // JSON string untuk validation rules
+  order           Int      @default(0)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+// Service Categories for Services Page - Kategori bangunan di halaman Services
+model ServiceCategory {
+  id              String   @id @default(cuid())
+  code            String   @unique // "A", "B", "C", "D", "E", "F", etc.
+  nameIndo        String
+  nameEng        String
+  descriptionIndo String?
+  descriptionEng  String?
+  icon            String?  // Lucide icon name (e.g., "Home", "Building2", etc.)
+  order           Int      @default(0)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  subCategories SubCategory[]
+}
+
+// Sub Categories - Sub-kategori dari Service Categories
+model SubCategory {
+  id              String   @id @default(cuid())
+  categoryId      String
+  category        ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  code            String   // "A1", "A2", "B1", etc.
+  nameIndo        String
+  nameEng        String
+  descriptionIndo String?
+  descriptionEng  String?
+  examplesIndo    String? // JSON array of example strings
+  examplesEng     String? // JSON array of example strings
+  order           Int      @default(0)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([categoryId, code])
+}
+
+// ==============================
+// PARTNERSHIP & ADS MANAGEMENT
+// ==============================
+
+// Partnership Request - Request dari form Contact
+model PartnershipRequest {
+  id              String   @id @default(cuid())
+  companyName     String
+  contactPerson   String
+  email           String
+  phone           String?
+  partnershipType String   // "product-advertisement", "contractor-services", "material-supplier", "other"
+  description     String
+  status          String   @default("pending") // "pending", "under_review", "approved", "rejected"
+  reviewedBy      String?  // User ID who reviewed
+  reviewedAt      DateTime?
+  reviewNotes     String?
+  partnerId       String?  // If approved, link to Partner
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Partner - Partner yang sudah approved
+model Partner {
+  id              String   @id @default(cuid())
+  userId          String?  @unique // If partner has login account
+  companyName     String
+  contactPerson   String
+  email           String
+  phone           String?
+  address         String?
+  type            String   // "product-supplier", "contractor", "material-supplier"
+  status          String   @default("active") // "active", "suspended", "expired"
+  contractStart   DateTime?
+  contractEnd     DateTime?
+  commissionRate  Float?   // Percentage fee to ARCHI-COLL (0-100)
+  totalRevenue    Float    @default(0)
+  logoUrl         String?
+  websiteUrl      String?
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  ads             Ad[]
+  catalogs        ProductCatalog[]
+}
+
+// Ad - Iklan yang dibuat oleh partner
+model Ad {
+  id              String   @id @default(cuid())
+  partnerId       String
+  partner         Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  title           String
+  titleIndo       String?
+  titleEng        String?
+  description     String?
+  descriptionIndo String?
+  descriptionEng  String?
+  type            String   // "product", "service", "catalog"
+  imageUrl        String?
+  imageUrls       String?  // JSON array of image URLs
+  linkUrl         String?
+  placement       String?  // JSON array of placement locations
+  status          String   @default("pending") // "pending", "active", "paused", "expired", "rejected"
+  startDate       DateTime
+  endDate         DateTime?
+  priority        Int      @default(0) // Higher = more frequent display
+  views           Int      @default(0)
+  clicks          Int      @default(0)
+  approvedBy      String?  // User ID who approved
+  approvedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Product Catalog - Katalog produk supplier
+model ProductCatalog {
+  id              String   @id @default(cuid())
+  partnerId       String
+  partner         Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  name            String
+  nameIndo        String?
+  nameEng         String?
+  category        String   // "concrete", "steel", "wood", "finishing", "doors_windows", "sanitary", "electrical", "furniture", "roofing"
+  subCategory     String?  // More specific category
+  description     String?
+  descriptionIndo String?
+  descriptionEng  String?
+  unit            String   // "m³", "kg", "m", "pcs", "pack", etc.
+  price           Float?
+  specifications  String?  // JSON object for technical specs
+  images          String?  // JSON array of image URLs
+  datasheetUrl    String?  // URL to product datasheet
+  status          String   @default("active") // "active", "inactive", "out_of_stock"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ==============================
+// ANALYTICS & MONITORING
+// ==============================
+
+// Analytics - Data analytics tracking
+model Analytics {
+  id          String   @id @default(cuid())
+  date        DateTime
+  metricName  String   // "page_views", "unique_visitors", "ad_views", "ad_clicks", "user_registrations", "projects_created", etc.
+  metricValue Float
+  breakdown   String?  // JSON object for additional breakdown (e.g., by page, by user type, etc.)
+  createdAt   DateTime @default(now())
+
+  @@unique([date, metricName, breakdown])
+}
+
+// User Session - Track user sessions for analytics
+model UserSession {
+  id          String   @id @default(cuid())
+  userId      String?  // If logged in
+  sessionId   String   // Browser session ID
+  ipAddress   String?
+  userAgent   String?
+  entryPage   String?
+  exitPage   String?
+  pageViews   Int      @default(0)
+  duration    Int?     // Session duration in seconds
+  bounced     Boolean  @default(false)
+  deviceType  String?  // "desktop", "mobile", "tablet"
+  browser     String?
+  os          String?
+  country     String?
+  city        String?
+  referrer    String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+}
+
+// Page View - Track individual page views
+model PageView {
+  id          String   @id @default(cuid())
+  sessionId   String?
+  userId      String?
+  page        String
+  pageTitle   String?
+  url         String?
+  referrer    String?
+  duration    Int?     // Time spent on page in seconds
+  createdAt   DateTime @default(now())
+}
+
+// ==============================
+// HRD & INTERNAL COMMUNICATION
+// ==============================
+
+// CompanyNews - News/announcements from HRD/Management
+model CompanyNews {
+  id              String   @id @default(cuid())
+  title           String
+  titleIndo       String?
+  titleEng        String?
+  content         String   // Main content (HTML allowed)
+  contentIndo     String?
+  contentEng      String?
+  category        String   // "general", "policy", "event", "achievement", "training"
+  priority        String   @default("normal") // "low", "normal", "high", "urgent"
+  imageUrl        String?
+  publishedBy     String   // User ID who published
+  publishedAt     DateTime @default(now())
+  expiresAt       DateTime?
+  targetAudience  String?  // "all", "architect", "structure", "mep", "drafter", "qs"
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
