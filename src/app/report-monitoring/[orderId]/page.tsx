@@ -53,7 +53,10 @@ import {
   ChevronRight,
   ChevronDown,
   Play,
-  ChevronLeft
+  ChevronLeft,
+  ShoppingBag,
+  Package,
+  Copy
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
@@ -155,6 +158,24 @@ interface Activity {
   timestamp: Date
 }
 
+interface ApprovalMaterial {
+  id: string
+  productItem: {
+    id: string
+    itemName: string
+    itemCode?: string
+    description?: string
+    imageUrl?: string
+    unit?: string
+    price?: number
+    specifications?: string
+  }
+  quantity: number
+  notes?: string | null
+  status: string
+  createdAt: Date
+}
+
 export default function ReportMonitoringPage() {
   const params = useParams()
   const router = useRouter()
@@ -173,6 +194,7 @@ export default function ReportMonitoringPage() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [activities, setActivities] = useState<Activity[]>([])
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null)
+  const [approvalMaterials, setApprovalMaterials] = useState<ApprovalMaterial[]>([])
 
   // UI states
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
@@ -208,14 +230,15 @@ export default function ReportMonitoringPage() {
   const fetchAllData = async () => {
     try {
       setLoading(true)
-      const [projectRes, teamRes, chatRes, tasksRes, meetingsRes, docsRes, activitiesRes] = await Promise.all([
+      const [projectRes, teamRes, chatRes, tasksRes, meetingsRes, docsRes, activitiesRes, approvalRes] = await Promise.all([
         fetch(`/api/projects/${orderId}`),
         fetch(`/api/projects/${orderId}/team`),
         fetch(`/api/projects/${orderId}/chat`),
         fetch(`/api/projects/${orderId}/tasks`),
         fetch(`/api/projects/${orderId}/meetings`),
         fetch(`/api/projects/${orderId}/documents`),
-        fetch(`/api/projects/${orderId}/activities`)
+        fetch(`/api/projects/${orderId}/activities`),
+        fetch(`/api/material-approvals?orderId=${orderId}`)
       ])
 
       if (projectRes.ok) setProjectData(await projectRes.json())
@@ -225,6 +248,10 @@ export default function ReportMonitoringPage() {
       if (meetingsRes.ok) setMeetings(await meetingsRes.json())
       if (docsRes.ok) setDocuments(await docsRes.json())
       if (activitiesRes.ok) setActivities(await activitiesRes.json())
+      if (approvalRes.ok) {
+        const approvalData = await approvalRes.json()
+        setApprovalMaterials(approvalData.approvalItems || [])
+      }
     } catch (error) {
       console.error('Error fetching data:', error)
       toast({ title: 'Gagal memuat data', variant: 'destructive' })
@@ -509,6 +536,13 @@ export default function ReportMonitoringPage() {
                   >
                     <Calendar className="w-4 h-4 mr-2" />
                     Jadwal
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="materials"
+                    className="data-[state=active]:bg-[#6B5B95]/20 data-[state=active]:text-[#9B59B6]"
+                  >
+                    <ShoppingBag className="w-4 h-4 mr-2" />
+                    Approval Material
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -1212,6 +1246,176 @@ export default function ReportMonitoringPage() {
                         </div>
                       </CardContent>
                     </Card>
+                  </TabsContent>
+
+                  {/* Approval Material Tab */}
+                  <TabsContent value="materials" className="space-y-6 mt-0">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-xl font-semibold text-white">Approval Material</h3>
+                        <p className="text-gray-400 text-sm">Material yang dipilih dari katalog iklan untuk project ini</p>
+                      </div>
+                      <Badge className="bg-[#6B5B95]/20 text-[#9B59B6] border-[#6B5B95]/30">
+                        {approvalMaterials.length} item
+                      </Badge>
+                    </div>
+
+                    {/* Materials Grid */}
+                    {approvalMaterials.length === 0 ? (
+                      <Card className="bg-[#2a2a2a]/50 border-gray-800">
+                        <CardContent className="py-16 text-center">
+                          <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <ShoppingBag className="w-10 h-10 text-gray-600" />
+                          </div>
+                          <h4 className="text-lg font-semibold text-white mb-2">Belum Ada Material</h4>
+                          <p className="text-gray-400 max-w-md mx-auto mb-6">
+                            Pilih material dari katalog iklan di dashboard dan tambahkan ke approval material project ini.
+                          </p>
+                          <Button
+                            onClick={() => router.push('/member/dashboard')}
+                            variant="outline"
+                            className="border-[#6B5B95]/30 text-[#9B59B6] hover:bg-[#6B5B95]/10"
+                          >
+                            <Package className="w-4 h-4 mr-2" />
+                            Lihat Katalog Iklan
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {approvalMaterials.map((material) => (
+                          <Card key={material.id} className="bg-[#2a2a2a]/50 border-gray-800 hover:border-[#6B5B95]/50 transition-all">
+                            <CardContent className="p-4">
+                              <div className="flex items-start gap-3">
+                                {/* Product Image */}
+                                {material.productItem.imageUrl ? (
+                                  <div className="w-16 h-16 bg-gray-900 rounded-lg overflow-hidden border border-gray-700 flex-shrink-0">
+                                    <img
+                                      src={material.productItem.imageUrl}
+                                      alt={material.productItem.itemName}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="w-16 h-16 bg-[#6B5B95]/20 rounded-lg flex items-center justify-center border border-[#6B5B95]/30 flex-shrink-0">
+                                    <Package className="w-8 h-8 text-[#9B59B6]" />
+                                  </div>
+                                )}
+
+                                {/* Product Info */}
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-white font-semibold text-sm line-clamp-2 mb-1">
+                                    {material.productItem.itemName}
+                                  </h4>
+                                  {material.productItem.itemCode && (
+                                    <p className="text-xs text-gray-500 mb-1">Kode: {material.productItem.itemCode}</p>
+                                  )}
+                                  {material.productItem.price && (
+                                    <p className="text-sm font-semibold text-[#9B59B6]">
+                                      Rp {material.productItem.price.toLocaleString('id-ID')}
+                                      {material.productItem.unit && `/${material.productItem.unit}`}
+                                    </p>
+                                  )}
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <Badge className={`text-xs ${
+                                      material.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                                      material.status === 'approved' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                                      material.status === 'rejected' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                                      'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                                    }`}>
+                                      {material.status === 'pending' ? 'Pending' :
+                                       material.status === 'approved' ? 'Disetujui' :
+                                       material.status === 'rejected' ? 'Ditolak' :
+                                       material.status}
+                                    </Badge>
+                                    {material.quantity > 1 && (
+                                      <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                                        Qty: {material.quantity}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Specifications */}
+                              {(material.productItem.description || material.productItem.specifications) && (
+                                <div className="mt-3 pt-3 border-t border-gray-800">
+                                  <p className="text-xs text-gray-400 line-clamp-2">
+                                    {material.productItem.description || material.productItem.specifications}
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Notes */}
+                              {material.notes && (
+                                <div className="mt-2 bg-[#1E1E1E] rounded p-2">
+                                  <p className="text-xs text-gray-400">
+                                    <span className="text-gray-500">Catatan:</span> {material.notes}
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Actions */}
+                              <div className="mt-3 pt-3 border-t border-gray-800 flex items-center justify-between">
+                                <span className="text-xs text-gray-500">
+                                  {new Date(material.createdAt).toLocaleDateString('id-ID')}
+                                </span>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 text-[#9B59B6] hover:bg-[#6B5B95]/10"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(material.productItem.itemName)
+                                      toast({ title: 'Nama produk disalin' })
+                                    }}
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Summary Card */}
+                    {approvalMaterials.length > 0 && (
+                      <Card className="bg-gradient-to-br from-[#6B5B95]/20 to-[#9B59B6]/20 border-[#6B5B95]/30">
+                        <CardHeader>
+                          <CardTitle className="text-white flex items-center gap-2">
+                            <ShoppingBag className="w-5 h-5" />
+                            Ringkasan Material
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-[#1E1E1E]/50 rounded-lg p-4">
+                              <p className="text-sm text-gray-400 mb-1">Total Item</p>
+                              <p className="text-2xl font-bold text-white">
+                                {approvalMaterials.length}
+                              </p>
+                            </div>
+                            <div className="bg-[#1E1E1E]/50 rounded-lg p-4">
+                              <p className="text-sm text-gray-400 mb-1">Total Harga</p>
+                              <p className="text-2xl font-bold text-[#9B59B6]">
+                                Rp {approvalMaterials.reduce((sum, m) => {
+                                  const price = m.productItem.price || 0
+                                  return sum + (price * m.quantity)
+                                }, 0).toLocaleString('id-ID')}
+                              </p>
+                            </div>
+                            <div className="bg-[#1E1E1E]/50 rounded-lg p-4">
+                              <p className="text-sm text-gray-400 mb-1">Status</p>
+                              <p className="text-2xl font-bold text-yellow-400">
+                                {approvalMaterials.filter(m => m.status === 'pending').length} Pending
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
                   </TabsContent>
                 </div>
               </ScrollArea>

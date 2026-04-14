@@ -60,7 +60,9 @@ export function MaterialAdsManager() {
   // Upload file state
   const [file, setFile] = useState<File | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [bannerFile, setBannerFile] = useState<File | null>(null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [uploadingBanner, setUploadingBanner] = useState(false)
 
   // Fetch ads
   const fetchAds = async () => {
@@ -112,6 +114,7 @@ export function MaterialAdsManager() {
       isActive: true
     })
     setLogoFile(null)
+    setBannerFile(null)
     setEditingAd(null)
   }
 
@@ -122,6 +125,11 @@ export function MaterialAdsManager() {
     // First, upload logo if selected
     if (logoFile && editingAd) {
       await handleLogoUpload(editingAd.id, logoFile)
+    }
+
+    // Upload banner image if selected
+    if (bannerFile && editingAd) {
+      await handleBannerUpload(editingAd.id, bannerFile)
     }
 
     try {
@@ -172,6 +180,33 @@ export function MaterialAdsManager() {
       alert('Failed to upload logo')
     } finally {
       setUploadingLogo(false)
+    }
+  }
+
+  // Handle banner upload
+  const handleBannerUpload = async (adId: string, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      setUploadingBanner(true)
+      const res = await fetch(`/api/material-ads/${adId}/upload-logo`, {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await res.json()
+      if (data.success) {
+        setFormData(prev => ({ ...prev, imageUrl: data.companyLogo }))
+        alert('Banner berhasil diupload')
+      } else {
+        alert(data.error || 'Failed to upload banner')
+      }
+    } catch (error) {
+      console.error('Error uploading banner:', error)
+      alert('Failed to upload banner')
+    } finally {
+      setUploadingBanner(false)
     }
   }
 
@@ -427,14 +462,63 @@ export function MaterialAdsManager() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="imageUrl" className="text-gray-300">URL Gambar Utama</Label>
-                  <Input
-                    id="imageUrl"
-                    type="url"
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    className="bg-gray-800 border-gray-700 text-white"
-                  />
+                  <Label htmlFor="imageUrl" className="text-gray-300">URL Gambar Utama (Opsional)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="imageUrl"
+                      type="url"
+                      value={formData.imageUrl}
+                      onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                      placeholder="atau upload file di bawah"
+                      className="bg-gray-800 border-gray-700 text-white flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Banner Upload */}
+              <div className="space-y-2">
+                <Label htmlFor="banner" className="text-gray-300">Upload Banner Utama (Opsional)</Label>
+                <div className="flex items-center gap-4">
+                  {formData.imageUrl && (
+                    <div className="w-24 h-24 bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
+                      <img
+                        src={formData.imageUrl}
+                        alt="Banner"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <Input
+                      id="banner"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                      onChange={(e) => setBannerFile(e.target.files?.[0] || null)}
+                      className="bg-gray-800 border-gray-700 text-white"
+                    />
+                  </div>
+                  {editingAd && bannerFile && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleBannerUpload(editingAd.id, bannerFile)}
+                      disabled={uploadingBanner}
+                      className="bg-[#6366F1] hover:bg-[#5558E8]"
+                    >
+                      {uploadingBanner ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Upload
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-4 h-4 mr-2" />
+                          Upload Banner
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
 
