@@ -155,7 +155,7 @@ export async function PUT(request: Request) {
                         `📊 Jumlah Lantai: ${updatedOrder.buildingFloors}\n` +
                         `💰 Design Fee: Rp ${updatedOrder.designFee.toLocaleString('id-ID')}\n\n` +
                         `Status: Menunggu Assignment`,
-              link: `/member/dashboard`
+              link: `/architect/dashboard`
             }))
           })
         }

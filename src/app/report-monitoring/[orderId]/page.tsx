@@ -1272,7 +1272,7 @@ export default function ReportMonitoringPage() {
                             Pilih material dari katalog iklan di dashboard dan tambahkan ke approval material project ini.
                           </p>
                           <Button
-                            onClick={() => router.push('/member/dashboard')}
+                            onClick={() => router.push('/architect/dashboard')}
                             variant="outline"
                             className="border-[#6B5B95]/30 text-[#9B59B6] hover:bg-[#6B5B95]/10"
                           >

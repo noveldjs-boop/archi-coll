@@ -188,7 +188,7 @@ const getInboxSampleData = (profession: string) => {
       type: 'project',
       title: 'Proyek Baru Ditugaskan',
       content: 'Anda telah ditugaskan untuk proyek Rumah Tinggal Pak Hary. Mohon segera review dan terima tugas.',
-      link: '/member/dashboard',
+      link: '/architect/dashboard',
       isRead: false,
       createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString() // 30 min ago
     },
@@ -206,7 +206,7 @@ const getInboxSampleData = (profession: string) => {
       type: 'system',
       title: 'Deadline Mendekat',
       content: 'Proyek Rumah Tinggal Pak Hary akan jatuh tempo dalam 3 hari. Pastikan upload revisi tepat waktu.',
-      link: '/member/dashboard',
+      link: '/architect/dashboard',
       isRead: false,
       createdAt: new Date(Date.now() - 1000 * 60 * 240).toISOString() // 4 hours ago
     }

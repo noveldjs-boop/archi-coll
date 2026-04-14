@@ -96,7 +96,7 @@ export default function AdDetailPage() {
               <p className="text-gray-400 max-w-md mx-auto mb-6">
                 {error || 'Detail iklan tidak ditemukan'}
               </p>
-              <Link href="/member/dashboard">
+              <Link href="/architect/dashboard">
                 <Button variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800">
                   Kembali ke Dashboard
                 </Button>

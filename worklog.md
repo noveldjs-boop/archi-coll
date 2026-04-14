@@ -405,3 +405,41 @@ Stage Summary:
 - Navigasi dari AdColumn ke halaman kategori sudah berfungsi
 - Semua perbaikan terintegrasi dengan baik tanpa error
 - Status: SEMUA FITUR BERFUNGSI OPTIMAL
+
+---
+Task ID: 2
+Agent: Z.ai Code
+Task: Pindahkan Dashboard Arsitek dari /member/dashboard ke /architect/dashboard
+
+Work Log:
+- Membuat direktori /src/app/architect/dashboard/
+- Menyalin page.tsx dari /member/dashboard ke /architect/dashboard
+- Menyalin layout.tsx dari /member ke /architect
+- Mengupdate semua referensi /member/dashboard ke /architect/dashboard di:
+  - /src/app/drafter/dashboard/page.tsx
+  - /src/app/mep/dashboard/page.tsx
+  - /src/app/structure/dashboard/page.tsx
+  - /src/app/qs/dashboard/page.tsx
+  - /src/app/licensed-architect/dashboard/page.tsx
+  - /src/app/member/login/page.tsx (redirect ke /architect/dashboard untuk arsitek)
+  - /src/app/ads/catalog/[id]/page.tsx
+  - /src/app/ads/detail/[id]/page.tsx
+  - /src/app/ads/[category]/page.tsx
+  - /src/app/report-monitoring/[orderId]/page.tsx
+  - /src/app/join-member/page.tsx
+  - /src/app/api/finance/payments/route.ts
+  - /src/app/api/project-management/route.ts
+  - /src/app/api/finance/assign-architect/route.ts
+  - /src/app/api/admin/preview-dashboard/route.ts
+  - /src/components/Providers.tsx
+- Menghapus direktori /src/app/member/dashboard
+- Verifikasi navigasi klien ke /client/dashboard sudah benar
+- Memeriksa dev log - tidak ada error atau warning
+
+Stage Summary:
+- Dashboard arsitek berhasil dipindahkan dari /member/dashboard ke /architect/dashboard
+- Semua referensi berhasil diupdate tanpa error
+- Route /member/dashboard tidak lagi tersedia
+- Navigasi klien ke /client/dashboard sudah sesuai
+- Tidak ada error di dev log
+- Status: PERBAIKAN SELESAI

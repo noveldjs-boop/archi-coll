@@ -123,7 +123,7 @@ export async function POST(request: Request) {
         type: 'project',
         title: 'Project Baru Ditugaskan',
         content: `Anda telah ditugaskan untuk project ${order.orderNumber} (${order.clientName}).`,
-        link: `/member/dashboard`
+        link: `/architect/dashboard`
       }
     })
 

@@ -25,7 +25,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/member/dashboard">
+              <Link href="/architect/dashboard">
                 <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white hover:bg-gray-800">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Kembali ke Dashboard

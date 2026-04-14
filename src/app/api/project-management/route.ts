@@ -234,7 +234,7 @@ export async function POST(request: Request) {
           type: 'project',
           title: 'Ditambahkan ke Project Team',
           content: `Anda telah ditambahkan ke project ${project.orderNumber} sebagai ${profession}.`,
-          link: `/member/dashboard?projectId=${projectId}`
+          link: `/architect/dashboard?projectId=${projectId}`
         }
       })
 

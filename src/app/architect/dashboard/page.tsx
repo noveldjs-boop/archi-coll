@@ -158,7 +158,7 @@ export default function ArchitectDashboard() {
                 'licensed-architect': '/licensed-architect/dashboard',
                 'licensed_architect': '/licensed-architect/dashboard'
               }
-              const correctRoute = professionRoutes[userProfession] || '/member/dashboard'
+              const correctRoute = professionRoutes[userProfession] || '/architect/dashboard'
               console.log(`User has profession "${userProfession}", redirecting to ${correctRoute}`)
               router.push(correctRoute)
             } else {

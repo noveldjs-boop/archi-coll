@@ -145,13 +145,13 @@ export default function StructureDashboard() {
             if (userProfession !== 'structure') {
               // Redirect to correct dashboard based on profession
               const professionRoutes: Record<string, string> = {
-                'architect': '/member/dashboard',
+                'architect': '/architect/dashboard',
                 'mep': '/mep/dashboard',
                 'drafter': '/drafter/dashboard',
                 'qs': '/qs/dashboard',
                 'licensed-architect': '/licensed-architect/dashboard'
               }
-              const correctRoute = professionRoutes[userProfession] || '/member/dashboard'
+              const correctRoute = professionRoutes[userProfession] || '/architect/dashboard'
               console.log(`User has profession "${userProfession}", redirecting to ${correctRoute}`)
               router.push(correctRoute)
             } else {

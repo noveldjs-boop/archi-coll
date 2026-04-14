@@ -10,7 +10,7 @@ function SessionProviderWrapper({ children }: { children: React.ReactNode }) {
 
   // Only enable session polling for protected routes (admin, member dashboard, etc.)
   const isProtectedRoute = useMemo(() => {
-    return pathname?.startsWith('/admin') || pathname?.startsWith('/member/dashboard')
+    return pathname?.startsWith('/admin') || pathname?.startsWith('/architect/dashboard')
   }, [pathname])
 
   return (

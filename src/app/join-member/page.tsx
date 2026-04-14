@@ -79,16 +79,16 @@ export default function JoinMemberPage() {
                 break
               case 'architect':
               default:
-                router.push('/member/dashboard')
+                router.push('/architect/dashboard')
                 break
             }
           } else {
             // If we can't get profession, redirect to default member dashboard
-            router.push('/member/dashboard')
+            router.push('/architect/dashboard')
           }
         } catch (error) {
           console.error('Error checking profession:', error)
-          router.push('/member/dashboard')
+          router.push('/architect/dashboard')
         }
       } else {
         console.error('Login failed: Unknown error')

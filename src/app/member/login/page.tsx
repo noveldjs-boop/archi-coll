@@ -82,7 +82,7 @@ export default function ArchitectLoginPage() {
               break
             case 'architect':
             default:
-              router.push('/member/dashboard')
+              router.push('/architect/dashboard')
               break
           }
         } else {
