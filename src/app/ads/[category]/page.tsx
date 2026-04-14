@@ -7,8 +7,8 @@ import Link from "next/link"
 import { getCategoryBySlug, AD_CATEGORIES } from "@/lib/ad-categories"
 import * as Icons from 'lucide-react'
 
-export default function CategoryPage({ params }: { params: { category: string } }) {
-  const categorySlug = params.category
+export default async function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
+  const { category: categorySlug } = await params
   const category = getCategoryBySlug(categorySlug)
 
   if (!category) {

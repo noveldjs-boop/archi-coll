@@ -22,6 +22,13 @@ export async function GET(request: NextRequest) {
       where,
       orderBy: {
         createdAt: 'desc'
+      },
+      include: {
+        _count: {
+          select: {
+            productItems: true
+          }
+        }
       }
     })
 

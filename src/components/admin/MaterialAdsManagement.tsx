@@ -50,7 +50,14 @@ import {
   Phone,
   DollarSign,
   RefreshCw,
-  Package2
+  Package2,
+  Upload,
+  FileSpreadsheet,
+  Image as ImageIcon,
+  Loader2,
+  X,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { AD_CATEGORIES } from "@/lib/ad-categories"
@@ -65,8 +72,12 @@ interface MaterialAd {
   price: string | null
   contact: string | null
   isActive: boolean
+  companyLogo?: string | null
   createdAt: string
   updatedAt: string
+  _count?: {
+    productItems: number
+  }
 }
 
 export function MaterialAdsManagement() {
@@ -77,6 +88,14 @@ export function MaterialAdsManagement() {
   const [editingAd, setEditingAd] = useState<MaterialAd | null>(null)
   const [adToDelete, setAdToDelete] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  
+  // Upload states
+  const [uploadLogoDialogOpen, setUploadLogoDialogOpen] = useState(false)
+  const [uploadExcelDialogOpen, setUploadExcelDialogOpen] = useState(false)
+  const [selectedAdForUpload, setSelectedAdForUpload] = useState<MaterialAd | null>(null)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [excelUploading, setExcelUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -194,6 +213,114 @@ export function MaterialAdsManagement() {
   const getCategoryName = (categoryId: string) => {
     const cat = AD_CATEGORIES.find(c => c.id === categoryId)
     return cat?.name || categoryId
+  }
+
+  const handleUploadLogo = async (file: File) => {
+    if (!selectedAdForUpload) return
+
+    setLogoUploading(true)
+    setUploadProgress(0)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const xhr = new XMLHttpRequest()
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const progress = Math.round((e.loaded / e.total) * 100)
+          setUploadProgress(progress)
+        }
+      })
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText)
+          if (response.success) {
+            toast({ title: 'Logo berhasil diupload' })
+            setUploadLogoDialogOpen(false)
+            fetchAds()
+          } else {
+            toast({ title: response.error || 'Gagal upload logo', variant: 'destructive' })
+          }
+        } else {
+          toast({ title: 'Gagal upload logo', variant: 'destructive' })
+        }
+        setLogoUploading(false)
+        setUploadProgress(0)
+      })
+
+      xhr.addEventListener('error', () => {
+        toast({ title: 'Gagal upload logo', variant: 'destructive' })
+        setLogoUploading(false)
+        setUploadProgress(0)
+      })
+
+      xhr.open('POST', `/api/material-ads/${selectedAdForUpload.id}/upload-logo`)
+      xhr.send(formData)
+    } catch (error) {
+      console.error('Error uploading logo:', error)
+      toast({ title: 'Terjadi kesalahan saat upload logo', variant: 'destructive' })
+      setLogoUploading(false)
+      setUploadProgress(0)
+    }
+  }
+
+  const handleUploadExcel = async (file: File) => {
+    if (!selectedAdForUpload) return
+
+    setExcelUploading(true)
+    setUploadProgress(0)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const xhr = new XMLHttpRequest()
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const progress = Math.round((e.loaded / e.total) * 100)
+          setUploadProgress(progress)
+        }
+      })
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText)
+          if (response.success) {
+            toast({ 
+              title: `Berhasil mengimpor ${response.imported} produk`,
+              description: response.skipped > 0 ? `${response.skipped} baris dilewati` : undefined
+            })
+            setUploadExcelDialogOpen(false)
+            fetchAds()
+          } else {
+            toast({ title: response.error || 'Gagal upload Excel', variant: 'destructive' })
+          }
+        } else {
+          const response = JSON.parse(xhr.responseText)
+          toast({ title: response.error || 'Gagal upload Excel', variant: 'destructive' })
+        }
+        setExcelUploading(false)
+        setUploadProgress(0)
+      })
+
+      xhr.addEventListener('error', () => {
+        toast({ title: 'Gagal upload Excel', variant: 'destructive' })
+        setExcelUploading(false)
+        setUploadProgress(0)
+      })
+
+      xhr.open('POST', `/api/material-ads/${selectedAdForUpload.id}/upload-excel`)
+      xhr.send(formData)
+    } catch (error) {
+      console.error('Error uploading Excel:', error)
+      toast({ title: 'Terjadi kesalahan saat upload Excel', variant: 'destructive' })
+      setExcelUploading(false)
+      setUploadProgress(0)
+    }
   }
 
   return (
@@ -433,6 +560,30 @@ export function MaterialAdsManagement() {
                         <Button
                           size="sm"
                           variant="outline"
+                          className="border-purple-600 text-purple-400 hover:bg-purple-950"
+                          onClick={() => {
+                            setSelectedAdForUpload(ad)
+                            setUploadLogoDialogOpen(true)
+                          }}
+                          title="Upload Logo Perusahaan"
+                        >
+                          <ImageIcon className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-blue-600 text-blue-400 hover:bg-blue-950"
+                          onClick={() => {
+                            setSelectedAdForUpload(ad)
+                            setUploadExcelDialogOpen(true)
+                          }}
+                          title="Upload Excel Produk"
+                        >
+                          <FileSpreadsheet className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
                           className="border-gray-600 text-white hover:bg-gray-700"
                           onClick={() => handleEdit(ad)}
                         >
@@ -479,6 +630,173 @@ export function MaterialAdsManagement() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Upload Logo Dialog */}
+        <Dialog open={uploadLogoDialogOpen} onOpenChange={setUploadLogoDialogOpen}>
+          <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-purple-400" />
+                Upload Logo Perusahaan
+              </DialogTitle>
+              <DialogDescription className="text-gray-400">
+                Upload logo perusahaan untuk: {selectedAdForUpload?.title}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {logoUploading ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">Uploading...</span>
+                      <span className="text-white font-medium">{uploadProgress}%</span>
+                    </div>
+                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-purple-500/50 transition-colors">
+                    <input
+                      type="file"
+                      id="logo-upload"
+                      className="hidden"
+                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleUploadLogo(file)
+                      }}
+                    />
+                    <label
+                      htmlFor="logo-upload"
+                      className="cursor-pointer flex flex-col items-center gap-3"
+                    >
+                      <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center">
+                        <Upload className="w-8 h-8 text-purple-400" />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">Klik untuk upload</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          PNG, JPG, GIF, WebP (max 5MB)
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                  {selectedAdForUpload?.companyLogo && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-400">Logo saat ini:</p>
+                      <div className="flex items-center gap-3 p-3 bg-gray-700/50 rounded-lg">
+                        <img 
+                          src={selectedAdForUpload.companyLogo} 
+                          alt="Current logo"
+                          className="w-12 h-12 object-contain rounded"
+                        />
+                        <span className="text-sm text-gray-300 truncate flex-1">Logo perusahaan</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Upload Excel Dialog */}
+        <Dialog open={uploadExcelDialogOpen} onOpenChange={setUploadExcelDialogOpen}>
+          <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-blue-400" />
+                Upload Excel Produk
+              </DialogTitle>
+              <DialogDescription className="text-gray-400">
+                Upload file Excel produk untuk: {selectedAdForUpload?.title}
+                {selectedAdForUpload?._count && selectedAdForUpload._count.productItems > 0 && (
+                  <span className="block mt-2 text-blue-400">
+                    Saat ini ada {selectedAdForUpload._count.productItems} produk
+                  </span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {excelUploading ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">Uploading & Processing...</span>
+                      <span className="text-white font-medium">{uploadProgress}%</span>
+                    </div>
+                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 text-center">
+                    Sedang memproses file Excel...
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-blue-500/50 transition-colors">
+                    <input
+                      type="file"
+                      id="excel-upload"
+                      className="hidden"
+                      accept=".xlsx,.xls"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleUploadExcel(file)
+                      }}
+                    />
+                    <label
+                      htmlFor="excel-upload"
+                      className="cursor-pointer flex flex-col items-center gap-3"
+                    >
+                      <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center">
+                        <FileSpreadsheet className="w-8 h-8 text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">Klik untuk upload</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          XLSX, XLS (Excel format)
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                    <p className="text-sm font-medium text-blue-400 mb-2">Format Excel:</p>
+                    <ul className="text-xs text-gray-400 space-y-1">
+                      <li>• Baris 1: Header (Nama, Kode, Deskripsi, dll)</li>
+                      <li>• Kolom wajib: Nama/Name/Produk</li>
+                      <li>• Kolom opsional: Kode, Harga, Satuan, Stok, URL Gambar</li>
+                    </ul>
+                  </div>
+                  {selectedAdForUpload?._count && selectedAdForUpload._count.productItems > 0 && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                      <p className="text-xs text-yellow-400 flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <span>Upload Excel akan menggantikan semua produk yang ada ({selectedAdForUpload._count.productItems} produk).</span>
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   )
