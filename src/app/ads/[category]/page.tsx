@@ -6,6 +6,7 @@ import { ArrowLeft, Package, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { getCategoryBySlug, AD_CATEGORIES } from "@/lib/ad-categories"
 import * as Icons from 'lucide-react'
+import { BackToDashboardButton } from "@/components/ads/BackToDashboardButton"
 
 export default async function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
   const { category: categorySlug } = await params
@@ -25,12 +26,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/architect/dashboard">
-                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white hover:bg-gray-800">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Kembali ke Dashboard
-                </Button>
-              </Link>
+              <BackToDashboardButton />
               <div className="flex items-center gap-3">
                 {IconComponent && (
                   <div className="w-12 h-12 bg-[#6366F1]/20 rounded-lg flex items-center justify-center">

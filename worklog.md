@@ -443,3 +443,31 @@ Stage Summary:
 - Navigasi klien ke /client/dashboard sudah sesuai
 - Tidak ada error di dev log
 - Status: PERBAIKAN SELESAI
+
+---
+Task ID: 3
+Agent: Z.ai Code
+Task: Perbaiki Navigasi Kembali ke Dashboard di Halaman /ads
+
+Work Log:
+- Mengidentifikasi masalah: tombol "Kembali ke Dashboard" di halaman /ads mengarah ke /architect/dashboard secara hardcoded
+- Membuat komponen baru /src/components/ads/BackToDashboardButton.tsx untuk navigasi dinamis
+- Update /src/app/ads/catalog/[id]/page.tsx:
+  - Tambah state dashboardPath dengan default '/architect/dashboard'
+  - Tambah useEffect untuk cek localStorage 'clientUser'
+  - Update tombol "Kembali ke Dashboard" untuk menggunakan dashboardPath dinamis
+- Update /src/app/ads/detail/[id]/page.tsx:
+  - Tambah state dashboardPath dengan default '/architect/dashboard'
+  - Tambah useEffect untuk cek localStorage 'clientUser'
+  - Update tombol "Kembali ke Dashboard" untuk menggunakan dashboardPath dinamis
+- Update /src/app/ads/[category]/page.tsx:
+  - Import komponen BackToDashboardButton
+  - Ganti tombol hardcoded dengan komponen BackToDashboardButton
+- Verifikasi dev log - tidak ada error
+
+Stage Summary:
+- Tombol "Kembali ke Dashboard" di semua halaman /ads sekarang dinamis
+- Klien yang login akan diarahkan ke /client/dashboard
+- Arsitek/profesional yang login akan diarahkan ke /architect/dashboard
+- Menggunakan localStorage 'clientUser' untuk mendeteksi user type
+- Status: PERBAIKAN SELESAI

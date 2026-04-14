@@ -35,6 +35,15 @@ export default function AdDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [ad, setAd] = useState<MaterialAd | null>(null)
   const [productCount, setProductCount] = useState(0)
+  const [dashboardPath, setDashboardPath] = useState<string>('/architect/dashboard')
+
+  // Check if user is client or architect
+  useEffect(() => {
+    const clientUser = localStorage.getItem('clientUser')
+    if (clientUser) {
+      setDashboardPath('/client/dashboard')
+    }
+  }, [])
 
   // Fetch ad details
   useEffect(() => {
@@ -96,7 +105,7 @@ export default function AdDetailPage() {
               <p className="text-gray-400 max-w-md mx-auto mb-6">
                 {error || 'Detail iklan tidak ditemukan'}
               </p>
-              <Link href="/architect/dashboard">
+              <Link href={dashboardPath}>
                 <Button variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800">
                   Kembali ke Dashboard
                 </Button>

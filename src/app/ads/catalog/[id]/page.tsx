@@ -54,12 +54,21 @@ export default function ProductCatalogPage() {
   const [ad, setAd] = useState<MaterialAd | null>(null)
   const [products, setProducts] = useState<ProductItem[]>([])
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+  const [dashboardPath, setDashboardPath] = useState<string>('/architect/dashboard')
 
   // Project selection for approval
   const [projects, setProjects] = useState<ActiveProject[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [showProjectDialog, setShowProjectDialog] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  // Check if user is client or architect
+  useEffect(() => {
+    const clientUser = localStorage.getItem('clientUser')
+    if (clientUser) {
+      setDashboardPath('/client/dashboard')
+    }
+  }, [])
 
   // Fetch ad and products
   useEffect(() => {
@@ -199,7 +208,7 @@ export default function ProductCatalogPage() {
               <p className="text-gray-400 max-w-md mx-auto mb-6">
                 {error || 'Katalog tidak ditemukan'}
               </p>
-              <Link href="/architect/dashboard">
+              <Link href={dashboardPath}>
                 <Button variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800">
                   Kembali ke Dashboard
                 </Button>
