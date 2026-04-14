@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { Plus, Edit, Trash2, Upload, Package, Check, X, Loader2 } from "lucide-react"
+import { Plus, Edit, Trash2, Upload, Package, Check, X, Loader2, Image as ImageIcon } from "lucide-react"
 import { CATEGORY_VALUES } from "@/lib/ad-categories"
 
 interface MaterialAd {
@@ -30,11 +30,6 @@ interface MaterialAd {
   _count?: {
     productItems: number
   }
-}
-
-interface ProductStats {
-  adId: string
-  count: number
 }
 
 export function MaterialAdsManager() {
@@ -64,6 +59,8 @@ export function MaterialAdsManager() {
 
   // Upload file state
   const [file, setFile] = useState<File | null>(null)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
 
   // Fetch ads
   const fetchAds = async () => {
@@ -72,7 +69,6 @@ export function MaterialAdsManager() {
       const res = await fetch('/api/material-ads')
       const data = await res.json()
       if (data.success) {
-        // Fetch product counts for each ad
         const adsWithCounts = await Promise.all(
           data.ads.map(async (ad: MaterialAd) => {
             try {
@@ -115,12 +111,19 @@ export function MaterialAdsManager() {
       websiteUrl: '',
       isActive: true
     })
+    setLogoFile(null)
     setEditingAd(null)
   }
 
   // Handle form submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // First, upload logo if selected
+    if (logoFile && editingAd) {
+      await handleLogoUpload(editingAd.id, logoFile)
+    }
+
     try {
       const url = editingAd ? `/api/material-ads/${editingAd.id}` : '/api/material-ads'
       const method = editingAd ? 'PUT' : 'POST'
@@ -142,6 +145,33 @@ export function MaterialAdsManager() {
     } catch (error) {
       console.error('Error saving ad:', error)
       alert('Failed to save ad')
+    }
+  }
+
+  // Handle logo upload
+  const handleLogoUpload = async (adId: string, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      setUploadingLogo(true)
+      const res = await fetch(`/api/material-ads/${adId}/upload-logo`, {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await res.json()
+      if (data.success) {
+        setFormData(prev => ({ ...prev, companyLogo: data.companyLogo }))
+        alert('Logo berhasil diupload')
+      } else {
+        alert(data.error || 'Failed to upload logo')
+      }
+    } catch (error) {
+      console.error('Error uploading logo:', error)
+      alert('Failed to upload logo')
+    } finally {
+      setUploadingLogo(false)
     }
   }
 
@@ -249,13 +279,13 @@ export function MaterialAdsManager() {
           <DialogTrigger asChild>
             <Button
               onClick={() => { resetForm() }}
-              className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+              className="bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5558E8] hover:to-[#7C5BE8]"
             >
               <Plus className="w-4 h-4 mr-2" />
               Tambah Iklan
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-black border-gray-800 max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="bg-[#1A1A1A] border-gray-800 max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-white">
                 {editingAd ? 'Edit Iklan' : 'Tambah Iklan Baru'}
@@ -273,7 +303,7 @@ export function MaterialAdsManager() {
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     required
-                    className="bg-gray-900 border-gray-700 text-white"
+                    className="bg-gray-800 border-gray-700 text-white"
                   />
                 </div>
                 <div className="space-y-2">
@@ -283,10 +313,10 @@ export function MaterialAdsManager() {
                     onValueChange={(value) => setFormData({ ...formData, category: value })}
                     required
                   >
-                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white">
+                    <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                       <SelectValue placeholder="Pilih kategori" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700">
+                    <SelectContent className="bg-gray-800 border-gray-700">
                       {CATEGORY_VALUES.map((cat) => (
                         <SelectItem key={cat} value={cat} className="text-white">
                           {cat.replace(/-/g, ' ').toUpperCase()}
@@ -305,7 +335,7 @@ export function MaterialAdsManager() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   required
                   rows={3}
-                  className="bg-gray-900 border-gray-700 text-white"
+                  className="bg-gray-800 border-gray-700 text-white"
                 />
               </div>
 
@@ -316,7 +346,7 @@ export function MaterialAdsManager() {
                     id="companyName"
                     value={formData.companyName}
                     onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                    className="bg-gray-900 border-gray-700 text-white"
+                    className="bg-gray-800 border-gray-700 text-white"
                   />
                 </div>
                 <div className="space-y-2">
@@ -326,31 +356,54 @@ export function MaterialAdsManager() {
                     type="url"
                     value={formData.websiteUrl}
                     onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
-                    className="bg-gray-900 border-gray-700 text-white"
+                    className="bg-gray-800 border-gray-700 text-white"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="imageUrl" className="text-gray-300">URL Gambar Utama</Label>
-                  <Input
-                    id="imageUrl"
-                    type="url"
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    className="bg-gray-900 border-gray-700 text-white"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="companyLogo" className="text-gray-300">URL Logo Perusahaan</Label>
-                  <Input
-                    id="companyLogo"
-                    type="url"
-                    value={formData.companyLogo}
-                    onChange={(e) => setFormData({ ...formData, companyLogo: e.target.value })}
-                    className="bg-gray-900 border-gray-700 text-white"
-                  />
+              {/* Logo Upload */}
+              <div className="space-y-2">
+                <Label htmlFor="logo" className="text-gray-300">Logo Perusahaan</Label>
+                <div className="flex items-center gap-4">
+                  {formData.companyLogo && (
+                    <div className="w-16 h-16 bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
+                      <img
+                        src={formData.companyLogo}
+                        alt="Company Logo"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <Input
+                      id="logo"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                      onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                      className="bg-gray-800 border-gray-700 text-white"
+                    />
+                  </div>
+                  {editingAd && logoFile && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleLogoUpload(editingAd.id, logoFile)}
+                      disabled={uploadingLogo}
+                      className="bg-[#6366F1] hover:bg-[#5558E8]"
+                    >
+                      {uploadingLogo ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Upload
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-4 h-4 mr-2" />
+                          Upload
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -361,7 +414,7 @@ export function MaterialAdsManager() {
                     id="price"
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="bg-gray-900 border-gray-700 text-white"
+                    className="bg-gray-800 border-gray-700 text-white"
                   />
                 </div>
                 <div className="space-y-2">
@@ -370,19 +423,31 @@ export function MaterialAdsManager() {
                     id="contact"
                     value={formData.contact}
                     onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                    className="bg-gray-900 border-gray-700 text-white"
+                    className="bg-gray-800 border-gray-700 text-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="catalogUrl" className="text-gray-300">URL Katalog</Label>
+                  <Label htmlFor="imageUrl" className="text-gray-300">URL Gambar Utama</Label>
                   <Input
-                    id="catalogUrl"
+                    id="imageUrl"
                     type="url"
-                    value={formData.catalogUrl}
-                    onChange={(e) => setFormData({ ...formData, catalogUrl: e.target.value })}
-                    className="bg-gray-900 border-gray-700 text-white"
+                    value={formData.imageUrl}
+                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                    className="bg-gray-800 border-gray-700 text-white"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="catalogUrl" className="text-gray-300">URL Katalog Eksternal (Opsional)</Label>
+                <Input
+                  id="catalogUrl"
+                  type="url"
+                  value={formData.catalogUrl}
+                  onChange={(e) => setFormData({ ...formData, catalogUrl: e.target.value })}
+                  placeholder="Link ke katalog PDF/website eksternal"
+                  className="bg-gray-800 border-gray-700 text-white"
+                />
               </div>
 
               <div className="flex items-center space-x-2">
@@ -403,7 +468,7 @@ export function MaterialAdsManager() {
                 >
                   Batal
                 </Button>
-                <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+                <Button type="submit" className="bg-[#6366F1] hover:bg-[#5558E8]">
                   {editingAd ? 'Update' : 'Simpan'}
                 </Button>
               </DialogFooter>
@@ -413,7 +478,7 @@ export function MaterialAdsManager() {
       </div>
 
       {/* Ads Table */}
-      <Card className="bg-black border-gray-800">
+      <Card className="bg-[#1A1A1A] border-gray-800">
         <CardHeader>
           <CardTitle className="text-white">Daftar Iklan</CardTitle>
           <CardDescription className="text-gray-400">
@@ -423,7 +488,7 @@ export function MaterialAdsManager() {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+              <Loader2 className="w-8 h-8 text-[#6366F1] animate-spin" />
             </div>
           ) : ads.length === 0 ? (
             <div className="text-center py-8">
@@ -444,11 +509,11 @@ export function MaterialAdsManager() {
               </TableHeader>
               <TableBody>
                 {ads.map((ad) => (
-                  <TableRow key={ad.id} className="border-gray-800 hover:bg-gray-900/50">
+                  <TableRow key={ad.id} className="border-gray-800 hover:bg-gray-800/50">
                     <TableCell className="text-white font-medium">{ad.title}</TableCell>
                     <TableCell className="text-gray-400">{ad.companyName || '-'}</TableCell>
                     <TableCell>
-                      <Badge className="bg-purple-900/50 text-purple-300 border-purple-500/30">
+                      <Badge className="bg-[#6366F1]/20 text-[#8B5CF6] border-[#6366F1]/30">
                         {ad.category}
                       </Badge>
                     </TableCell>
@@ -481,7 +546,7 @@ export function MaterialAdsManager() {
                             setUploadResult(null)
                             setFile(null)
                           }}
-                          className="border-purple-500/50 text-purple-300 hover:bg-purple-900/30"
+                          className="border-[#6366F1]/30 text-[#8B5CF6] hover:bg-[#6366F1]/10"
                         >
                           <Upload className="w-4 h-4 mr-1" />
                           Upload Excel
@@ -514,7 +579,7 @@ export function MaterialAdsManager() {
 
       {/* Upload Excel Dialog */}
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-        <DialogContent className="bg-black border-gray-800">
+        <DialogContent className="bg-[#1A1A1A] border-gray-800">
           <DialogHeader>
             <DialogTitle className="text-white">Upload Katalog Produk</DialogTitle>
             <DialogDescription className="text-gray-400">
@@ -530,11 +595,17 @@ export function MaterialAdsManager() {
                 accept=".xlsx,.xls"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                 required
-                className="bg-gray-900 border-gray-700 text-white"
+                className="bg-gray-800 border-gray-700 text-white"
               />
-              <p className="text-xs text-gray-500">
-                Kolom yang diperlukan: Nama/Name. Opsional: Kode/Code, Deskripsi/Description, Satuan/Unit, Harga/Price, Stok/Stock
-              </p>
+              <div className="bg-gray-800/50 p-3 rounded-lg space-y-1">
+                <p className="text-xs text-gray-400 font-semibold">Kolom yang didukung:</p>
+                <p className="text-xs text-gray-500">
+                  • <span className="text-white">Wajib:</span> Nama/Name/Produk
+                </p>
+                <p className="text-xs text-gray-500">
+                  • <span className="text-white">Opsional:</span> Kode, Deskripsi, Spesifikasi, Satuan, Harga, Stok, Foto/Gambar
+                </p>
+              </div>
             </div>
 
             {uploadResult && (
@@ -555,7 +626,7 @@ export function MaterialAdsManager() {
               >
                 Batal
               </Button>
-              <Button type="submit" disabled={uploading || !file} className="bg-purple-600 hover:bg-purple-700">
+              <Button type="submit" disabled={uploading || !file} className="bg-[#6366F1] hover:bg-[#5558E8]">
                 {uploading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />

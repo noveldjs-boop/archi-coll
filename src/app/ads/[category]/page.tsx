@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
-import { MaterialAdCard } from "@/components/ads/MaterialAdCard"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { AdListItem } from "@/components/ads/AdListItem"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Package, AlertCircle } from "lucide-react"
 import Link from "next/link"
@@ -19,27 +19,27 @@ export default function CategoryPage({ params }: { params: { category: string } 
   const IconComponent = (Icons as any)[category.icon]
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#0F0F0F]">
       {/* Header */}
-      <header className="border-b bg-card">
+      <header className="border-b border-gray-800 bg-[#1A1A1A]/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/">
-                <Button variant="ghost" size="sm">
+              <Link href="/member/dashboard">
+                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white hover:bg-gray-800">
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Kembali
+                  Kembali ke Dashboard
                 </Button>
               </Link>
               <div className="flex items-center gap-3">
                 {IconComponent && (
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <IconComponent className="w-6 h-6 text-primary" />
+                  <div className="w-12 h-12 bg-[#6366F1]/20 rounded-lg flex items-center justify-center">
+                    <IconComponent className="w-6 h-6 text-[#6366F1]" />
                   </div>
                 )}
                 <div>
-                  <h1 className="text-2xl font-bold">{category.name}</h1>
-                  <p className="text-sm text-muted-foreground">{category.subtitle}</p>
+                  <h1 className="text-2xl font-bold text-white">{category.name}</h1>
+                  <p className="text-sm text-gray-400">{category.subtitle}</p>
                 </div>
               </div>
             </div>
@@ -50,11 +50,11 @@ export default function CategoryPage({ params }: { params: { category: string } 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <p className="text-muted-foreground mb-2">
-            Kategori: {category.name}
+          <p className="text-gray-400 mb-2">
+            Kategori: <span className="text-white font-medium">{category.name}</span>
           </p>
-          <p className="text-sm text-muted-foreground">
-            Menampilkan produk untuk kategori {category.description}
+          <p className="text-sm text-gray-500">
+            Menampilkan supplier dan produk untuk kategori ini
           </p>
         </div>
 
@@ -63,7 +63,7 @@ export default function CategoryPage({ params }: { params: { category: string } 
 
         {/* Other Categories */}
         <div className="mt-16">
-          <h2 className="text-xl font-bold mb-6">Kategori Lainnya</h2>
+          <h2 className="text-xl font-bold text-white mb-6">Kategori Lainnya</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {AD_CATEGORIES
               .filter((cat) => cat.id !== category.id)
@@ -71,22 +71,20 @@ export default function CategoryPage({ params }: { params: { category: string } 
                 const CatIcon = (Icons as any)[cat.icon]
                 return (
                   <Link key={cat.id} href={`/ads/${cat.slug}`}>
-                    <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-                      <CardHeader className="pb-3">
+                    <Card className="bg-[#1A1A1A] border-gray-800 hover:border-[#6366F1]/50 transition-colors cursor-pointer">
+                      <CardContent className="p-5">
                         <div className="flex items-center gap-3">
                           {CatIcon && (
-                            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <CatIcon className="w-5 h-5 text-primary" />
+                            <div className="w-10 h-10 bg-[#6366F1]/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <CatIcon className="w-5 h-5 text-[#6366F1]" />
                             </div>
                           )}
                           <div>
-                            <CardTitle className="text-base">{cat.name}</CardTitle>
-                            <CardDescription className="text-xs">
-                              {cat.subtitle}
-                            </CardDescription>
+                            <h3 className="text-white font-medium text-base">{cat.name}</h3>
+                            <p className="text-gray-500 text-xs">{cat.subtitle}</p>
                           </div>
                         </div>
-                      </CardHeader>
+                      </CardContent>
                     </Card>
                   </Link>
                 )
@@ -112,13 +110,13 @@ async function AdsGrid({ categorySlug }: { categorySlug: string }) {
 
     if (!data.success || !data.ads || data.ads.length === 0) {
       return (
-        <Card>
+        <Card className="bg-[#1A1A1A] border-gray-800">
           <CardContent className="py-16 text-center">
-            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <Package className="w-10 h-10 text-muted-foreground" />
+            <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Package className="w-10 h-10 text-gray-600" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Belum Ada Iklan</h3>
-            <p className="text-muted-foreground max-w-md mx-auto">
+            <h3 className="text-xl font-semibold text-white mb-2">Belum Ada Iklan</h3>
+            <p className="text-gray-400 max-w-md mx-auto">
               Saat ini belum ada iklan untuk kategori ini. Silakan cek lagi nanti.
             </p>
           </CardContent>
@@ -129,19 +127,15 @@ async function AdsGrid({ categorySlug }: { categorySlug: string }) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {data.ads.map((ad: any) => (
-          <MaterialAdCard
+          <AdListItem
             key={ad.id}
             id={ad.id}
             title={ad.title}
             description={ad.description}
-            category={ad.category}
-            imageUrl={ad.imageUrl}
-            catalogUrl={ad.catalogUrl}
-            price={ad.price}
-            contact={ad.contact}
             companyName={ad.companyName}
             companyLogo={ad.companyLogo}
-            websiteUrl={ad.websiteUrl}
+            imageUrl={ad.imageUrl}
+            category={ad.category}
           />
         ))}
       </div>
@@ -149,13 +143,13 @@ async function AdsGrid({ categorySlug }: { categorySlug: string }) {
   } catch (error) {
     console.error('Error fetching ads:', error)
     return (
-      <Card className="border-red-200 bg-red-50/50">
+      <Card className="bg-[#1A1A1A] border-gray-800">
         <CardContent className="py-16 text-center">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-10 h-10 text-red-600" />
+          <div className="w-20 h-20 bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-10 h-10 text-red-400" />
           </div>
-          <h3 className="text-xl font-semibold mb-2 text-red-900">Gagal Memuat Iklan</h3>
-          <p className="text-red-700 max-w-md mx-auto">
+          <h3 className="text-xl font-semibold text-white mb-2">Gagal Memuat Iklan</h3>
+          <p className="text-gray-400 max-w-md mx-auto">
             Terjadi kesalahan saat memuat iklan. Silakan refresh halaman atau coba lagi nanti.
           </p>
         </CardContent>

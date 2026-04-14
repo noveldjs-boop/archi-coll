@@ -16,18 +16,18 @@ export function AdCategoryBox({ category }: AdCategoryBoxProps) {
 
   return (
     <Link href={`/ads/${category.slug}`}>
-      <Card className="p-3 cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-[1.02] hover:bg-gray-900/50 border border-gray-800 hover:border-purple-500/50 bg-black">
+      <Card className="p-3 cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-[1.02] hover:bg-gray-800/50 border border-gray-800 hover:border-[#6366F1]/50 bg-[#1A1A1A]">
         <div className="flex items-start gap-2">
           {IconComponent && (
             <div className="w-4 h-4 mt-0.5 flex-shrink-0">
-              <IconComponent className="w-4 h-4 text-purple-400" />
+              <IconComponent className="w-4 h-4 text-[#6366F1]" />
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold bg-gradient-to-r from-purple-400 via-purple-500 to-yellow-400 bg-clip-text text-transparent leading-tight">
+            <h3 className="text-sm font-semibold text-white leading-tight">
               {category.name}
             </h3>
-            <p className="text-xs italic text-purple-300 mt-0.5">
+            <p className="text-xs italic text-gray-500 mt-0.5">
               {category.subtitle}
             </p>
             <p className="text-xs text-gray-400 mt-1 line-clamp-2">

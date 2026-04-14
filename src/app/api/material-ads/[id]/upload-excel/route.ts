@@ -77,16 +77,18 @@ export async function POST(
       return headers.findIndex(h => possibleNames.some(name => h.includes(name)))
     }
 
-    const nameIndex = getColumnIndex(['nama', 'name', 'nama produk', 'product name', 'item name'])
-    const codeIndex = getColumnIndex(['kode', 'code', 'sku', 'item code'])
-    const descriptionIndex = getColumnIndex(['deskripsi', 'description', 'deskripsi produk'])
-    const unitIndex = getColumnIndex(['satuan', 'unit', 'uom'])
-    const priceIndex = getColumnIndex(['harga', 'price', 'harga satuan'])
-    const stockIndex = getColumnIndex(['stok', 'stock', 'qty', 'quantity'])
+    const nameIndex = getColumnIndex(['nama', 'name', 'nama produk', 'product name', 'item name', 'nama barang'])
+    const codeIndex = getColumnIndex(['kode', 'code', 'sku', 'item code', 'kode barang'])
+    const descriptionIndex = getColumnIndex(['deskripsi', 'description', 'deskripsi produk', 'keterangan', 'spesifikasi', 'specification'])
+    const specIndex = getColumnIndex(['spesifikasi', 'specification', 'spec', 'detail', 'detail spesifikasi'])
+    const unitIndex = getColumnIndex(['satuan', 'unit', 'uom', 'unit of measure'])
+    const priceIndex = getColumnIndex(['harga', 'price', 'harga satuan', 'unit price'])
+    const stockIndex = getColumnIndex(['stok', 'stock', 'qty', 'quantity', 'jumlah'])
+    const imageIndex = getColumnIndex(['foto', 'gambar', 'image', 'photo', 'url gambar', 'image url', 'foto produk'])
 
     if (nameIndex === -1) {
       return NextResponse.json(
-        { success: false, error: 'Missing required column: Nama/Name' },
+        { success: false, error: 'Missing required column: Nama/Name/Produk. Pastikan kolom nama produk ada di baris pertama Excel.' },
         { status: 400 }
       )
     }
@@ -112,7 +114,18 @@ export async function POST(
         unit: unitIndex !== -1 && row[unitIndex] ? String(row[unitIndex]).trim() : null,
         price: priceIndex !== -1 && row[priceIndex] ? parseFloat(String(row[priceIndex])) || null : null,
         stock: stockIndex !== -1 && row[stockIndex] ? parseInt(String(row[stockIndex])) || null : null,
+        imageUrl: imageIndex !== -1 && row[imageIndex] ? String(row[imageIndex]).trim() : null,
         materialAdId: params.id
+      }
+
+      // Combine description and specification if both exist
+      if (specIndex !== -1 && row[specIndex]) {
+        const spec = String(row[specIndex]).trim()
+        if (product.description) {
+          product.description = `${product.description}\n\nSpesifikasi: ${spec}`
+        } else {
+          product.description = `Spesifikasi: ${spec}`
+        }
       }
 
       products.push(product)
@@ -120,12 +133,12 @@ export async function POST(
 
     if (products.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'No valid products found in Excel file' },
+        { success: false, error: 'No valid products found in Excel file. Pastikan kolom nama produk terisi.' },
         { status: 400 }
       )
     }
 
-    // Delete existing products for this ad (optional - remove if you want to append)
+    // Delete existing products for this ad
     await db.productItem.deleteMany({
       where: { materialAdId: params.id }
     })
@@ -138,14 +151,24 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: `Successfully imported ${createdProducts.count} products`,
+      message: `Berhasil mengimpor ${createdProducts.count} produk`,
       imported: createdProducts.count,
-      skipped: skippedCount
+      skipped: skippedCount,
+      columnsFound: {
+        name: nameIndex !== -1,
+        code: codeIndex !== -1,
+        description: descriptionIndex !== -1,
+        specification: specIndex !== -1,
+        unit: unitIndex !== -1,
+        price: priceIndex !== -1,
+        stock: stockIndex !== -1,
+        image: imageIndex !== -1
+      }
     })
   } catch (error) {
     console.error('Error uploading Excel:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to process Excel file' },
+      { success: false, error: 'Failed to process Excel file: ' + (error instanceof Error ? error.message : 'Unknown error') },
       { status: 500 }
     )
   }

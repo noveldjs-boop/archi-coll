@@ -6,7 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Building2, Globe, Package, Check, AlertCircle, Loader2 } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ArrowLeft, Building2, Globe, Package, Check, AlertCircle, Loader2, ShoppingCart } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -19,6 +21,7 @@ interface ProductItem {
   price?: number
   stock?: number
   imageUrl?: string
+  specifications?: string
 }
 
 interface MaterialAd {
@@ -32,6 +35,15 @@ interface MaterialAd {
   websiteUrl?: string
 }
 
+interface ActiveProject {
+  id: string
+  orderNumber: string
+  projectName: string | null
+  clientName: string
+  buildingArea: string
+  status: string
+}
+
 export default function ProductCatalogPage() {
   const params = useParams()
   const router = useRouter()
@@ -42,6 +54,12 @@ export default function ProductCatalogPage() {
   const [ad, setAd] = useState<MaterialAd | null>(null)
   const [products, setProducts] = useState<ProductItem[]>([])
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+
+  // Project selection for approval
+  const [projects, setProjects] = useState<ActiveProject[]>([])
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [showProjectDialog, setShowProjectDialog] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   // Fetch ad and products
   useEffect(() => {
@@ -64,6 +82,17 @@ export default function ProductCatalogPage() {
         const productsData = await productsRes.json()
         if (productsData.success) {
           setProducts(productsData.products)
+        }
+
+        // Fetch active projects
+        try {
+          const projectsRes = await fetch('/api/architect/active-projects')
+          if (projectsRes.ok) {
+            const projectsData = await projectsRes.json()
+            setProjects(projectsData.activeProjects || [])
+          }
+        } catch (err) {
+          console.error('Error fetching projects:', err)
         }
       } catch (err) {
         console.error('Error fetching data:', err)
@@ -89,41 +118,68 @@ export default function ProductCatalogPage() {
     setSelectedItems(newSelected)
   }
 
-  // Add selected items to approval
-  const handleAddToApproval = async () => {
-    if (selectedItems.size === 0) return
+  // Handle add to approval
+  const handleAddToApproval = () => {
+    if (selectedItems.size === 0) {
+      alert('Pilih minimal satu produk')
+      return
+    }
 
+    if (projects.length === 0) {
+      alert('Tidak ada project aktif. Silakan ambil project terlebih dahulu.')
+      return
+    }
+
+    // If only one project, auto-select it
+    if (projects.length === 1) {
+      setSelectedProjectId(projects[0].id)
+      submitApproval(projects[0].id)
+    } else {
+      // Show dialog to select project
+      setShowProjectDialog(true)
+    }
+  }
+
+  // Submit approval
+  const submitApproval = async (projectId: string) => {
     try {
-      // TODO: Get actual orderId from context or user selection
-      const orderId = localStorage.getItem('currentOrderId')
+      setSubmitting(true)
 
       const response = await fetch('/api/material-approvals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productItemIds: Array.from(selectedItems),
-          orderId
+          orderId: projectId
         })
       })
 
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
-          alert(`${selectedItems.size} item berhasil ditambahkan ke Approval Material`)
+          alert(`${selectedItems.size} item berhasil ditambahkan ke Approval Material!`)
           setSelectedItems(new Set())
+          setShowProjectDialog(false)
+          // Redirect to project monitoring
+          router.push(`/report-monitoring/${projectId}`)
         }
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || 'Gagal menambahkan item ke Approval Material')
       }
     } catch (error) {
       console.error('Error adding to approval:', error)
-      alert('Gagal menambahkan item ke Approval Material')
+      alert('Terjadi kesalahan saat menambahkan item ke Approval Material')
+    } finally {
+      setSubmitting(false)
     }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-purple-500 animate-spin mx-auto mb-4" />
+          <Loader2 className="w-12 h-12 text-[#6366F1] animate-spin mx-auto mb-4" />
           <p className="text-gray-400">Memuat katalog...</p>
         </div>
       </div>
@@ -132,20 +188,20 @@ export default function ProductCatalogPage() {
 
   if (error || !ad) {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen bg-[#0F0F0F]">
         <div className="container mx-auto px-4 py-16">
-          <Card className="max-w-2xl mx-auto bg-black border-gray-800">
+          <Card className="max-w-2xl mx-auto bg-[#1A1A1A] border-gray-800">
             <CardContent className="py-16 text-center">
-              <div className="w-20 h-20 bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertCircle className="w-10 h-10 text-purple-400" />
+              <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-10 h-10 text-gray-600" />
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-white">Gagal Memuat Katalog</h3>
+              <h3 className="text-xl font-semibold text-white mb-2">Gagal Memuat Katalog</h3>
               <p className="text-gray-400 max-w-md mx-auto mb-6">
                 {error || 'Katalog tidak ditemukan'}
               </p>
-              <Link href="/ads">
-                <Button variant="outline" className="border-purple-500/50 text-purple-300 hover:bg-purple-900/30">
-                  Kembali ke Iklan
+              <Link href="/member/dashboard">
+                <Button variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800">
+                  Kembali ke Dashboard
                 </Button>
               </Link>
             </CardContent>
@@ -156,21 +212,21 @@ export default function ProductCatalogPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0F0F0F]">
       {/* Header */}
-      <header className="border-b border-gray-800 bg-black/50 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-gray-800 bg-[#1A1A1A]/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href={`/ads/${ad.category}`}>
-                <Button variant="ghost" size="sm" className="text-purple-300 hover:text-purple-200 hover:bg-purple-900/30">
+              <Link href={`/ads/detail/${adId}`}>
+                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white hover:bg-gray-800">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Kembali
                 </Button>
               </Link>
               <div className="flex items-center gap-3">
                 {ad.companyLogo ? (
-                  <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center overflow-hidden border border-gray-700">
+                  <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center overflow-hidden border border-gray-700">
                     <Image
                       src={ad.companyLogo}
                       alt={ad.companyName || 'Company Logo'}
@@ -180,14 +236,14 @@ export default function ProductCatalogPage() {
                     />
                   </div>
                 ) : (
-                  <div className="w-10 h-10 bg-purple-900/30 rounded-lg flex items-center justify-center border border-purple-500/30">
-                    <Building2 className="w-5 h-5 text-purple-400" />
+                  <div className="w-10 h-10 bg-[#6366F1]/20 rounded-lg flex items-center justify-center border border-[#6366F1]/30">
+                    <Building2 className="w-5 h-5 text-[#6366F1]" />
                   </div>
                 )}
                 <div>
                   <h1 className="text-xl font-bold text-white line-clamp-1">{ad.title}</h1>
                   {ad.companyName && (
-                    <p className="text-sm text-purple-300">{ad.companyName}</p>
+                    <p className="text-sm text-gray-400">{ad.companyName}</p>
                   )}
                 </div>
               </div>
@@ -195,10 +251,20 @@ export default function ProductCatalogPage() {
             {selectedItems.size > 0 && (
               <Button
                 onClick={handleAddToApproval}
-                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white"
+                disabled={submitting}
+                className="bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5558E8] hover:to-[#7C5BE8] text-white shadow-lg shadow-purple-500/25"
               >
-                <Check className="w-4 h-4 mr-2" />
-                Tambah ke Approval ({selectedItems.size})
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Memproses...
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Tambah ke Approval ({selectedItems.size})
+                  </>
+                )}
               </Button>
             )}
           </div>
@@ -208,11 +274,11 @@ export default function ProductCatalogPage() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {/* Ad Info */}
-        <Card className="mb-8 bg-black border-gray-800">
+        <Card className="mb-8 bg-[#1A1A1A] border-gray-800">
           <CardContent className="p-6">
-            <div className="flex gap-6">
+            <div className="flex gap-6 flex-col md:flex-row">
               {ad.imageUrl && (
-                <div className="w-48 h-48 flex-shrink-0 bg-gray-900 rounded-lg overflow-hidden border border-gray-700">
+                <div className="w-full md:w-48 h-48 flex-shrink-0 bg-gray-900 rounded-lg overflow-hidden border border-gray-700">
                   <Image
                     src={ad.imageUrl}
                     alt={ad.title}
@@ -226,7 +292,7 @@ export default function ProductCatalogPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h2 className="text-2xl font-bold text-white mb-2">{ad.title}</h2>
-                    <Badge className="bg-purple-900/50 text-purple-300 border-purple-500/30">
+                    <Badge className="bg-[#6366F1]/20 text-[#8B5CF6] border-[#6366F1]/30">
                       {ad.category}
                     </Badge>
                   </div>
@@ -235,7 +301,7 @@ export default function ProductCatalogPage() {
                       asChild
                       variant="outline"
                       size="sm"
-                      className="border-purple-500/50 text-purple-300 hover:bg-purple-900/30"
+                      className="border-[#6366F1]/30 text-[#8B5CF6] hover:bg-[#6366F1]/10"
                     >
                       <a
                         href={ad.websiteUrl}
@@ -244,7 +310,7 @@ export default function ProductCatalogPage() {
                         className="flex items-center gap-1"
                       >
                         <Globe className="w-3 h-3" />
-                        Website Perusahaan
+                        Website
                       </a>
                     </Button>
                   )}
@@ -255,15 +321,15 @@ export default function ProductCatalogPage() {
           </CardContent>
         </Card>
 
-        {/* Products Table */}
-        <Card className="bg-black border-gray-800">
+        {/* Products Grid */}
+        <Card className="bg-[#1A1A1A] border-gray-800">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
-              <Package className="w-5 h-5 text-purple-400" />
+              <Package className="w-5 h-5 text-[#6366F1]" />
               Katalog Produk
             </CardTitle>
             <CardDescription className="text-gray-400">
-              Pilih produk untuk ditambahkan ke Approval Material
+              {products.length} item tersedia • Centang produk untuk ditambahkan ke Approval Material
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -273,82 +339,141 @@ export default function ProductCatalogPage() {
                 <p className="text-gray-400">Belum ada produk dalam katalog ini</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-800">
-                      <th className="text-left p-4 text-gray-400 font-medium w-12">Pilih</th>
-                      <th className="text-left p-4 text-gray-400 font-medium">Nama Produk</th>
-                      <th className="text-left p-4 text-gray-400 font-medium">Kode</th>
-                      <th className="text-left p-4 text-gray-400 font-medium">Deskripsi</th>
-                      <th className="text-left p-4 text-gray-400 font-medium">Satuan</th>
-                      <th className="text-right p-4 text-gray-400 font-medium">Harga</th>
-                      <th className="text-right p-4 text-gray-400 font-medium">Stok</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {products.map((product) => (
-                      <tr
-                        key={product.id}
-                        className={`border-b border-gray-800 hover:bg-gray-900/50 transition-colors ${
-                          selectedItems.has(product.id) ? 'bg-purple-900/10' : ''
-                        }`}
-                      >
-                        <td className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {products.map((product) => (
+                  <Card
+                    key={product.id}
+                    className={`bg-gray-800/50 border-gray-700 hover:border-[#6366F1]/50 transition-all cursor-pointer ${
+                      selectedItems.has(product.id) ? 'border-[#6366F1] ring-1 ring-[#6366F1]' : ''
+                    }`}
+                    onClick={() => toggleItem(product.id)}
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex items-start gap-4">
+                        {/* Checkbox */}
+                        <div className="pt-1">
                           <Checkbox
                             checked={selectedItems.has(product.id)}
                             onCheckedChange={() => toggleItem(product.id)}
-                            className="border-purple-500/50 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                            className="border-gray-600 data-[state=checked]:bg-[#6366F1] data-[state=checked]:border-[#6366F1]"
+                            onClick={(e) => e.stopPropagation()}
                           />
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            {product.imageUrl && (
-                              <div className="w-12 h-12 bg-gray-900 rounded overflow-hidden border border-gray-700">
-                                <Image
-                                  src={product.imageUrl}
-                                  alt={product.itemName}
-                                  width={48}
-                                  height={48}
-                                  className="object-cover w-full h-full"
-                                />
-                              </div>
-                            )}
-                            <span className="text-white font-medium">{product.itemName}</span>
+                        </div>
+
+                        {/* Product Image */}
+                        {product.imageUrl ? (
+                          <div className="w-20 h-20 bg-gray-900 rounded-lg overflow-hidden border border-gray-700 flex-shrink-0">
+                            <Image
+                              src={product.imageUrl}
+                              alt={product.itemName}
+                              width={80}
+                              height={80}
+                              className="object-cover w-full h-full"
+                            />
                           </div>
-                        </td>
-                        <td className="p-4 text-gray-400">{product.itemCode || '-'}</td>
-                        <td className="p-4 text-gray-400 max-w-xs">{product.description || '-'}</td>
-                        <td className="p-4 text-gray-400">{product.unit || '-'}</td>
-                        <td className="p-4 text-right">
-                          {product.price ? (
-                            <span className="bg-gradient-to-r from-purple-400 to-yellow-400 bg-clip-text text-transparent font-semibold">
-                              Rp {product.price.toLocaleString('id-ID')}
-                            </span>
-                          ) : (
-                            <span className="text-gray-500">-</span>
+                        ) : (
+                          <div className="w-20 h-20 bg-gray-800 rounded-lg flex items-center justify-center border border-gray-700 flex-shrink-0">
+                            <Package className="w-8 h-8 text-gray-600" />
+                          </div>
+                        )}
+
+                        {/* Product Info */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-white font-semibold text-sm line-clamp-2 mb-1">
+                            {product.itemName}
+                          </h4>
+                          {product.itemCode && (
+                            <p className="text-xs text-gray-500 mb-1">Kode: {product.itemCode}</p>
                           )}
-                        </td>
-                        <td className="p-4 text-right">
-                          {product.stock !== undefined ? (
-                            <span className={`font-medium ${
+                          {product.description && (
+                            <p className="text-xs text-gray-400 line-clamp-2 mb-2">
+                              {product.description}
+                            </p>
+                          )}
+                          {product.unit && (
+                            <p className="text-xs text-gray-500 mb-1">Satuan: {product.unit}</p>
+                          )}
+                          {product.price && (
+                            <p className="text-sm font-semibold text-[#8B5CF6]">
+                              Rp {product.price.toLocaleString('id-ID')}
+                            </p>
+                          )}
+                          {product.stock !== undefined && (
+                            <p className={`text-xs mt-1 ${
                               product.stock > 0 ? 'text-green-400' : 'text-red-400'
                             }`}>
-                              {product.stock}
-                            </span>
-                          ) : (
-                            <span className="text-gray-500">-</span>
+                              Stok: {product.stock}
+                            </p>
                           )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             )}
           </CardContent>
         </Card>
       </main>
+
+      {/* Project Selection Dialog */}
+      <Dialog open={showProjectDialog} onOpenChange={setShowProjectDialog}>
+        <DialogContent className="bg-[#1A1A1A] border-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-white">Pilih Project</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Pilih project yang sedang Anda kerjakan untuk menambahkan item ke Approval Material
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Select
+              value={selectedProjectId || ''}
+              onValueChange={(value) => setSelectedProjectId(value)}
+            >
+              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                <SelectValue placeholder="Pilih project..." />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id} className="text-white">
+                    {project.orderNumber} - {project.projectName || project.clientName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-gray-500">
+              {selectedItems.size} item akan ditambahkan ke project yang dipilih
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowProjectDialog(false)}
+              className="border-gray-700 text-gray-300 hover:bg-gray-800"
+              disabled={submitting}
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={() => selectedProjectId && submitApproval(selectedProjectId)}
+              disabled={!selectedProjectId || submitting}
+              className="bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5558E8] hover:to-[#7C5BE8] text-white"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  Tambah ke Approval
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
