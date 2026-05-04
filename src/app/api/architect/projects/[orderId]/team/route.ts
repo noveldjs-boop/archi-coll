@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
 // GET - Get team members for a specific project
 export async function GET(
-  request: Request,
-  { params }: { params: { orderId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -14,7 +14,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { orderId } = params
+    const { orderId } = await params;
 
     // Verify this architect owns the project
     const member = await db.member.findFirst({
